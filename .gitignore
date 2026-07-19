@@ -1,0 +1,68 @@
+# 编译输出
+target/
+build/
+out/
+bin/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE相关
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+*.launch
+
+# 日志文件
+logs/
+*.log
+log/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# 环境配置文件（敏感信息）
+application-local.yml
+application-dev.yml
+application-prod.yml
+application-test.yml
+application-local.properties
+application-dev.properties
+application-prod.properties
+application-test.properties
+.env
+.env.local
+.env.*.local
+
+# 临时文件
+temp/
+tmp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 测试报告
+test-reports/
+surefire-reports/
+jacoco.exec
+
+# 缓存文件
+.cache/
+*.cache
+
+# 编译输出的class文件
+*.class
+target/
+build/
