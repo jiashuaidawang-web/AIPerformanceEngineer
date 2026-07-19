@@ -5,8 +5,9 @@ import com.aipe.agent.connector.ConnectorManager;
 import com.aipe.agent.connector.ConnectorRegistry;
 import com.aipe.agent.event.AgentEventBus;
 import com.aipe.agent.health.AgentHealthChecker;
+import com.aipe.agent.heartbeat.HeartbeatSender;
 import com.aipe.agent.lifecycle.AgentLifecycleManager;
-import com.aipe.agent.observation.ObservationSender;
+import com.aipe.agent.observation.HttpObservationSender;
 import com.aipe.agent.scheduler.SchedulerManager;
 import com.aipe.common.enums.AgentState;
 import org.slf4j.Logger;
@@ -17,12 +18,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Agent 核心运行上下文
- *
- * <p>持有所有运行时组件引用，统一生命周期管理。
- * 是 Agent 的"心脏"，协调 ConnectorManager、SchedulerManager、ObservationSender。
- *
- * @author AI Performance Engineer
- * @since 1.0.0
  */
 public class AgentRuntime {
 
@@ -32,29 +27,29 @@ public class AgentRuntime {
     private final ConnectorRegistry connectorRegistry;
     private final ConnectorManager connectorManager;
     private final SchedulerManager schedulerManager;
-    private final ObservationSender observationSender;
+    private final HttpObservationSender observationSender;
     private final AgentEventBus eventBus;
     private final AgentHealthChecker healthChecker;
     private final AgentLifecycleManager lifecycleManager;
+    private final HeartbeatSender heartbeatSender;
     private final AtomicReference<AgentState> state = new AtomicReference<>(AgentState.CREATED);
     private LocalDateTime startedTime;
 
     public AgentRuntime(AgentConfig config) {
         this.config = config;
         this.connectorRegistry = new ConnectorRegistry();
-        this.observationSender = new ObservationSender(config);
+        this.observationSender = new HttpObservationSender(config);
         this.eventBus = new AgentEventBus();
         this.schedulerManager = new SchedulerManager(config.getSchedulerPoolSize());
         this.connectorManager = new ConnectorManager(connectorRegistry, schedulerManager, observationSender, eventBus, config);
         this.healthChecker = new AgentHealthChecker(this);
         this.lifecycleManager = new AgentLifecycleManager(this);
+        this.heartbeatSender = new HeartbeatSender(config);
         log.info("AgentRuntime instantiated for agentId={}", config.getAgentId());
     }
 
     /**
      * 启动 Agent Runtime
-     *
-     * <p>初始化所有子组件，注册 Connector，启动调度器。
      */
     public synchronized void start() {
         if (state.get() == AgentState.RUNNING) {
@@ -81,6 +76,9 @@ public class AgentRuntime {
             // 5. 启动健康检查
             healthChecker.start();
 
+            // 6. 启动心跳
+            heartbeatSender.start();
+
             state.set(AgentState.RUNNING);
             startedTime = LocalDateTime.now();
             log.info("Agent Runtime started successfully. agentId={}, state={}", config.getAgentId(), state.get());
@@ -93,8 +91,6 @@ public class AgentRuntime {
 
     /**
      * 停止 Agent
-     *
-     * <p>优雅关闭所有子组件。
      */
     public synchronized void stop() {
         if (state.get() == AgentState.STOPPING || state.get() == AgentState.STOPPED) {
@@ -105,16 +101,19 @@ public class AgentRuntime {
         state.set(AgentState.STOPPING);
 
         try {
-            // 1. 停止健康检查
+            // 1. 停止心跳
+            heartbeatSender.stop();
+
+            // 2. 停止健康检查
             healthChecker.stop();
 
-            // 2. 停止所有 Connector
+            // 3. 停止所有 Connector
             connectorManager.stopAll();
 
-            // 3. 停止调度器
+            // 4. 停止调度器
             schedulerManager.shutdown();
 
-            // 4. 停止 Observation Sender
+            // 5. 停止 Observation Sender
             observationSender.shutdown();
 
             state.set(AgentState.STOPPED);
@@ -127,8 +126,6 @@ public class AgentRuntime {
 
     /**
      * 获取 Agent 状态信息
-     *
-     * @return AgentStatus
      */
     public AgentStatus getStatus() {
         AgentStatus status = new AgentStatus();
@@ -141,45 +138,17 @@ public class AgentRuntime {
         return status;
     }
 
-    public AgentConfig getConfig() {
-        return config;
-    }
-
-    public AgentState getState() {
-        return state.get();
-    }
-
-    public ConnectorRegistry getConnectorRegistry() {
-        return connectorRegistry;
-    }
-
-    public ConnectorManager getConnectorManager() {
-        return connectorManager;
-    }
-
-    public SchedulerManager getSchedulerManager() {
-        return schedulerManager;
-    }
-
-    public ObservationSender getObservationSender() {
-        return observationSender;
-    }
-
-    public AgentEventBus getEventBus() {
-        return eventBus;
-    }
-
-    public AgentHealthChecker getHealthChecker() {
-        return healthChecker;
-    }
-
-    public AgentLifecycleManager getLifecycleManager() {
-        return lifecycleManager;
-    }
-
-    public LocalDateTime getStartedTime() {
-        return startedTime;
-    }
+    public AgentConfig getConfig() { return config; }
+    public AgentState getState() { return state.get(); }
+    public ConnectorRegistry getConnectorRegistry() { return connectorRegistry; }
+    public ConnectorManager getConnectorManager() { return connectorManager; }
+    public SchedulerManager getSchedulerManager() { return schedulerManager; }
+    public HttpObservationSender getObservationSender() { return observationSender; }
+    public AgentEventBus getEventBus() { return eventBus; }
+    public AgentHealthChecker getHealthChecker() { return healthChecker; }
+    public AgentLifecycleManager getLifecycleManager() { return lifecycleManager; }
+    public HeartbeatSender getHeartbeatSender() { return heartbeatSender; }
+    public LocalDateTime getStartedTime() { return startedTime; }
 
     /**
      * Agent 状态 DTO

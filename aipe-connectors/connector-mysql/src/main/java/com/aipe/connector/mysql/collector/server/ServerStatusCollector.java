@@ -11,6 +11,7 @@ public class ServerStatusCollector implements MySQLCollector {
     private static final String[] KEYS = {"Threads_connected","Threads_running","Questions","Com_select","Com_insert","Com_update","Com_delete","Innodb_row_lock_waits","Innodb_row_lock_time","Slow_queries","Uptime"};
     @Override
     public List<ObservationData> collect(MySQLConnection c, String agentId, String cid) {
+        if (c == null) { log.debug("MySQLConnection is null, skipping"); return new ArrayList<>(); }
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");

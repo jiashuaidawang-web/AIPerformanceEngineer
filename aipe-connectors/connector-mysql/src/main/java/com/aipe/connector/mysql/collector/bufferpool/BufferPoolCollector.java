@@ -10,6 +10,7 @@ public class BufferPoolCollector implements MySQLCollector {
     private static final Logger log = LoggerFactory.getLogger(BufferPoolCollector.class);
     @Override
     public List<ObservationData> collect(MySQLConnection c, String agentId, String cid) {
+        if (c == null) { log.debug("MySQLConnection is null, skipping"); return new ArrayList<>(); }
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");

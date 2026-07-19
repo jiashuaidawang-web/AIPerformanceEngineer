@@ -46,8 +46,9 @@
             <version>8.0.33</version>
         </dependency>
         <dependency>
-            <groupId>com.clickhouse</groupId>
-            <artifactId>clickhouse-jdbc</artifactId>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 

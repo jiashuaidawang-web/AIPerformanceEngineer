@@ -10,6 +10,7 @@ public class LockCollector implements MySQLCollector {
     private static final Logger log = LoggerFactory.getLogger(LockCollector.class);
     @Override
     public List<ObservationData> collect(MySQLConnection c, String agentId, String cid) {
+        if (c == null) { log.debug("MySQLConnection is null, skipping"); return new ArrayList<>(); }
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
@@ -19,7 +20,8 @@ public class LockCollector implements MySQLCollector {
                 catch (Exception e) {}
             }
         });
-        c.query("SELECT COUNT(*) as cnt FROM information_schema.INNODB_LOCKS", rs -> {
+        // MySQL 8.0+ 用 INNODB_TRX 替代了 INNODB_LOCKS
+        c.query("SELECT COUNT(*) as cnt FROM information_schema.INNODB_TRX", rs -> {
             while (rs.next()) {
                 try { r.add(b(agentId,cid,now,"mysql.lock.current",rs.getDouble("cnt"),"count",tags)); }
                 catch (Exception e) {}

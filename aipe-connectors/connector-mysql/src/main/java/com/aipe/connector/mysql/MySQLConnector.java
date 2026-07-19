@@ -119,10 +119,14 @@ public class MySQLConnector extends AbstractConnector {
     @Override
     public List<ObservationData> collect() throws ConnectorException {
         List<ObservationData> allResults = new ArrayList<>();
-        if (connection == null || !connection.isConnected()) {
+        if (connection == null) {
+            log.warn("MySQL connection is null, skipping collect");
+            return allResults;
+        }
+        if (!connection.isConnected()) {
             log.warn("MySQL connection not available, attempting reconnect");
             try { connection.connect(); }
-            catch (Exception e) { throw new ConnectorException(getConnectorId(), "Reconnect failed", e); }
+            catch (Exception e) { log.warn("Reconnect failed: {}", e.getMessage()); return allResults; }
         }
 
         for (MySQLCollector collector : collectors) {

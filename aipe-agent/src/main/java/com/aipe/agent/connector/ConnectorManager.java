@@ -2,7 +2,7 @@ package com.aipe.agent.connector;
 
 import com.aipe.agent.config.AgentConfig;
 import com.aipe.agent.event.AgentEventBus;
-import com.aipe.agent.observation.ObservationSender;
+import com.aipe.agent.observation.HttpObservationSender;
 import com.aipe.agent.scheduler.SchedulerManager;
 import com.aipe.common.domain.ObservationData;
 import com.aipe.connector.sdk.context.ConnectorContext;
@@ -38,7 +38,7 @@ public class ConnectorManager {
 
     private final ConnectorRegistry registry;
     private final SchedulerManager schedulerManager;
-    private final ObservationSender observationSender;
+    private final HttpObservationSender observationSender;
     private final AgentEventBus eventBus;
     private final AgentConfig config;
     private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -46,7 +46,7 @@ public class ConnectorManager {
 
     public ConnectorManager(ConnectorRegistry registry,
                              SchedulerManager schedulerManager,
-                             ObservationSender observationSender,
+                             HttpObservationSender observationSender,
                              AgentEventBus eventBus,
                              AgentConfig config) {
         this.registry = registry;

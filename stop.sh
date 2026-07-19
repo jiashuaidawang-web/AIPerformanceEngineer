@@ -1,10 +1,6 @@
 #!/bin/zsh
 # ============================================================
-# stop.sh — 停止服务
-# 用法: ./stop.sh          # 停止全部
-#       ./stop.sh agent    # 只停止 agent
-#       ./stop.sh backend  # 只停止 backend
-#       ./stop.sh config   # 只停止 config-manager
+# stop.sh — 停止全部服务
 # ============================================================
 
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -21,7 +17,6 @@ stop_one() {
     if kill -0 "$pid" 2>/dev/null; then
         echo "[$name] stopping (PID $pid)..."
         kill "$pid"
-        # Wait for process to exit
         local count=0
         while kill -0 "$pid" 2>/dev/null && [ $count -lt 15 ]; do
             sleep 1
@@ -31,16 +26,15 @@ stop_one() {
             echo "[$name] force killing (PID $pid)..."
             kill -9 "$pid"
         fi
-        echo "[$name] stopped"
+        echo "[$name] stopped ✓"
     else
         echo "[$name] not running (stale pidfile)"
     fi
     rm -f "$pidfile"
 }
 
-TARGETS=("$@")
-[ $# -eq 0 ] && TARGETS=(agent backend config)
-
-for name in "${TARGETS[@]}"; do
-    stop_one "$name"
-done
+echo "Stopping all services..."
+stop_one backend
+stop_one config
+stop_one agent
+echo "All services stopped."

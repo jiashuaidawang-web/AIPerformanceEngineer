@@ -11,7 +11,12 @@ spring:
       password: astock_root
       driver-class-name: com.mysql.cj.jdbc.Driver
     clickhouse:
-      url: jdbc:clickhouse://localhost:8123/metric_observation
+      url: jdbc:clickhouse://localhost:8123/metric_observation?compress=0
       username: default
       password: pamirs@123
       driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+
+aipe:
+  agent:
+    heartbeat-timeout-seconds: 90
+    heartbeat-check-interval-seconds: 30
