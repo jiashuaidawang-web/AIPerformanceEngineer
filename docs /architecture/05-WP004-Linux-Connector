@@ -1,0 +1,1187 @@
+WP004 会开始扩展第一个非 JVM 领域资源采集：
+
+Host CPU
+Memory
+Disk
+Network
+TCP连接
+Load Average
+Process
+
+并验证：
+
+一个 Agent 是否可以同时管理多领域 Connector。
+
+WP004 是第二个真实生产环境 Connector。
+
+它的意义：
+
+WP003 解决：
+
+应用层（Java JVM）性能观测
+
+WP004 解决：
+
+基础设施层（Host OS）性能观测
+
+这样 AI Performance Engineer 才第一次具备：
+
+Application Domain
+
+        +
+
+Infrastructure Domain
+
+
+        ↓
+
+
+完整性能上下文
+
+
+# AI Performance Engineer
+# WP004-Linux-Connector Blueprint v1.0
+
+
+> Document Type: Work Package Blueprint
+>
+> Version: v1.0
+>
+> Status: Frozen
+>
+> Milestone: M1 - Agent MVP
+>
+> Priority: P0
+>
+> Owner: AI
+>
+> DependsOn:
+> - WP001 Agent Bootstrap
+> - WP002 Connector SDK
+>
+> RequiredBy:
+> - WP007 Observation Pipeline
+> - WP010 Resource Model
+> - WP018 Root Cause Engine
+>
+> EstimatedJavaFiles: 40
+>
+> EstimatedWorkload: 5 Days
+>
+> Blueprint Template:
+> 01-Blueprint-Template.md v1.0
+
+
+---
+
+# 1. Goal（目标）
+
+
+# 1.1 Purpose
+
+
+WP004实现 Linux Host 级性能采集 Connector。
+
+
+目标：
+
+通过 Agent 部署在服务器节点上，自动采集：
+
+- CPU
+- Memory
+- Disk
+- Network
+- TCP
+- Load
+- Process
+
+
+形成统一：
+
+Observation。
+
+
+---
+
+# 1.2 Capability Added
+
+
+Before:
+
+
+系统只能看到：
+
+Java应用内部指标。
+
+
+After:
+
+
+系统能够关联：
+
+
+```
+Application
+
+↓
+
+JVM
+
+↓
+
+Host OS
+```
+
+
+获得完整运行环境画像。
+
+
+---
+
+# 1.3 Scope
+
+
+包含：
+
+
+- Linux Connector
+- Host Resource Collector
+- OS指标采集
+- Process采集
+- Network采集
+- Disk采集
+
+
+不包含：
+
+- Kubernetes Node采集
+- 云资源采集
+- AI诊断
+
+
+---
+
+# 2. Acceptance Criteria（验收标准）
+
+
+# 2.1 Functional Acceptance
+
+
+```
+□ Linux Connector可以被Agent加载
+
+□ 支持Linux服务器
+
+□ 周期采集Host指标
+
+□ 输出Observation
+
+□ 支持多服务器部署
+
+□ 支持Connector生命周期
+```
+
+
+---
+
+# 2.2 Technical Acceptance
+
+
+```
+□ 禁止Mock数据
+
+□ 禁止固定指标
+
+□ 禁止TODO
+
+□ 不依赖人工执行命令
+
+□ 采集异常隔离
+
+□ 支持高频采集
+```
+
+
+---
+
+# 2.3 Integration Acceptance
+
+
+完整链路：
+
+
+```
+Agent
+
+↓
+
+Connector SDK
+
+↓
+
+LinuxConnector
+
+↓
+
+Collector
+
+↓
+
+ObservationEmitter
+```
+
+
+---
+
+# 3. Package List（包结构）
+
+
+```
+com.aipe.connector.linux
+
+
+├── LinuxConnector
+
+
+├── collector
+
+
+│   ├── cpu
+
+│   ├── memory
+
+│   ├── disk
+
+│   ├── network
+
+│   ├── tcp
+
+│   ├── load
+
+│   └── process
+
+
+├── parser
+
+
+├── model
+
+
+├── builder
+
+
+└── support
+
+```
+
+
+---
+
+## Package Responsibility
+
+
+|Package|Responsibility|
+|-|-|
+|collector|Linux指标采集|
+|parser|解析系统数据|
+|model|指标模型|
+|builder|Observation转换|
+|support|工具|
+
+
+---
+
+# 4. Class List（类清单）
+
+
+# 4.1 LinuxConnector
+
+
+Package:
+
+```
+com.aipe.connector.linux
+```
+
+
+Type:
+
+Connector实现。
+
+
+Responsibility:
+
+
+Linux采集总控。
+
+
+负责：
+
+- 初始化Collector
+- 调度采集
+- 输出Observation
+
+
+---
+
+# 4.2 LinuxCollector
+
+
+Package:
+
+```
+collector
+```
+
+
+Type:
+
+Interface
+
+
+Responsibility:
+
+
+Linux采集器标准接口。
+
+
+---
+
+# 4.3 CpuCollector
+
+
+Package:
+
+```
+collector.cpu
+```
+
+
+Responsibility:
+
+
+CPU指标。
+
+
+采集：
+
+
+- user
+- system
+- idle
+- iowait
+- load
+
+
+数据来源：
+
+```
+/proc/stat
+```
+
+
+---
+
+# 4.4 MemoryCollector
+
+
+Package:
+
+```
+collector.memory
+```
+
+
+Responsibility:
+
+
+内存指标。
+
+
+数据来源：
+
+```
+/proc/meminfo
+```
+
+
+采集：
+
+- total
+- available
+- used
+- cache
+
+
+---
+
+# 4.5 DiskCollector
+
+
+Package:
+
+```
+collector.disk
+```
+
+
+Responsibility:
+
+
+磁盘指标。
+
+
+数据来源：
+
+Linux filesystem。
+
+
+采集：
+
+
+- total
+- used
+- free
+- io
+
+
+---
+
+# 4.6 NetworkCollector
+
+
+Package:
+
+```
+collector.network
+```
+
+
+Responsibility:
+
+
+网络流量。
+
+
+数据来源：
+
+```
+/proc/net/dev
+```
+
+
+采集：
+
+
+- rx bytes
+- tx bytes
+- packets
+
+
+---
+
+# 4.7 TcpCollector
+
+
+Package:
+
+```
+collector.tcp
+```
+
+
+Responsibility:
+
+
+TCP连接。
+
+
+数据来源：
+
+```
+/proc/net/tcp
+```
+
+
+采集：
+
+- established
+- listen
+- close_wait
+
+
+---
+
+# 4.8 LoadCollector
+
+
+Package:
+
+```
+collector.load
+```
+
+
+Responsibility:
+
+
+系统负载。
+
+
+数据来源：
+
+```
+/proc/loadavg
+```
+
+
+采集：
+
+- 1min
+- 5min
+- 15min
+
+
+---
+
+# 4.9 ProcessCollector
+
+
+Package:
+
+```
+collector.process
+```
+
+
+Responsibility:
+
+
+进程信息。
+
+
+采集：
+
+- pid
+- cpu
+- memory
+
+
+---
+
+# 4.10 ProcFileReader
+
+
+Package:
+
+```
+parser
+```
+
+
+Responsibility:
+
+
+统一读取proc文件。
+
+
+---
+
+# 4.11 LinuxObservationBuilder
+
+
+Package:
+
+```
+builder
+```
+
+
+Responsibility:
+
+
+转换Observation。
+
+
+---
+
+# 5. Method List（方法清单）
+
+
+# LinuxConnector
+
+
+```java
+init(ConnectorContext context)
+
+初始化Linux采集环境
+```
+
+
+```java
+start()
+
+启动采集线程
+```
+
+
+```java
+stop()
+
+释放资源
+```
+
+
+---
+
+# CpuCollector
+
+
+```java
+collect()
+
+Return:
+
+CpuMetric
+
+
+说明:
+
+读取/proc/stat计算CPU利用率
+```
+
+
+---
+
+# MemoryCollector
+
+
+```java
+collect()
+
+Return:
+
+MemoryMetric
+
+
+说明:
+
+解析/proc/meminfo
+```
+
+
+---
+
+# DiskCollector
+
+
+```java
+collect()
+
+Return:
+
+DiskMetric
+
+
+说明:
+
+获取文件系统使用率
+```
+
+
+---
+
+# NetworkCollector
+
+
+```java
+collect()
+
+Return:
+
+NetworkMetric
+
+
+说明:
+
+解析网络流量
+```
+
+
+---
+
+# TcpCollector
+
+
+```java
+collect()
+
+Return:
+
+TcpMetric
+
+
+说明:
+
+统计TCP状态
+```
+
+
+---
+
+# ProcFileReader
+
+
+```java
+read(String path)
+
+Return:
+
+String
+
+
+说明:
+
+读取Linux proc文件
+```
+
+
+---
+
+# LinuxObservationBuilder
+
+
+```java
+build()
+
+参数:
+
+LinuxMetric
+
+
+返回:
+
+ObservationData
+```
+
+
+---
+
+# 6. Dependency（依赖关系）
+
+
+## 6.1 Internal Dependency
+
+
+```
+WP001 Agent
+
+↓
+
+WP002 Connector SDK
+
+↓
+
+WP004 Linux Connector
+
+↓
+
+WP007 Observation Pipeline
+```
+
+
+---
+
+## 6.2 External Dependency
+
+
+|Dependency|Purpose|
+|-|-|
+|Linux proc filesystem|OS metrics|
+|Java NIO|filesystem|
+|SLF4J|logging|
+
+
+---
+
+## 6.3 Dependency Rule
+
+
+Linux Connector:
+
+只能依赖：
+
+Connector SDK。
+
+
+禁止：
+
+依赖Agent内部实现。
+
+
+---
+
+# 7. Physical File List（物理文件清单）
+
+
+必须创建：
+
+
+```
+aipe-connector-linux/
+
+
+src/main/java/com/aipe/connector/linux/LinuxConnector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/LinuxCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/cpu/CpuCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/memory/MemoryCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/disk/DiskCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/network/NetworkCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/tcp/TcpCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/load/LoadCollector.java
+
+
+src/main/java/com/aipe/connector/linux/collector/process/ProcessCollector.java
+
+
+src/main/java/com/aipe/connector/linux/parser/ProcFileReader.java
+
+
+src/main/java/com/aipe/connector/linux/builder/LinuxObservationBuilder.java
+
+
+src/main/resources/application.yml
+```
+
+
+---
+
+# 8. Sequence Diagram（时序图）
+
+
+## Startup
+
+
+```
+AgentRuntime
+
+↓
+
+ConnectorManager
+
+↓
+
+LinuxConnector.init()
+
+↓
+
+LinuxCollectorManager
+
+↓
+
+Register Collectors
+
+↓
+
+LinuxConnector.start()
+
+↓
+
+RUNNING
+```
+
+
+---
+
+## Collection Flow
+
+
+```
+Scheduler
+
+↓
+
+LinuxConnector
+
+↓
+
+CpuCollector
+
+↓
+
+MemoryCollector
+
+↓
+
+DiskCollector
+
+↓
+
+NetworkCollector
+
+↓
+
+TcpCollector
+
+↓
+
+LinuxObservationBuilder
+
+↓
+
+ObservationEmitter
+```
+
+
+---
+
+# 9. State Machine（状态机）
+
+
+LinuxConnector:
+
+
+```
+CREATED
+
+↓
+
+INITIALIZED
+
+↓
+
+STARTING
+
+↓
+
+RUNNING
+
+↓
+
+COLLECTING
+
+↓
+
+STOPPING
+
+↓
+
+STOPPED
+
+
+异常:
+
+↓
+
+ERROR
+```
+
+
+---
+
+# 10. Implementation Constraints（实现约束）
+
+
+# 10.1 Must Implement
+
+
+必须真实读取：
+
+
+CPU:
+
+```
+/proc/stat
+```
+
+
+Memory:
+
+```
+/proc/meminfo
+```
+
+
+Network:
+
+```
+/proc/net/dev
+```
+
+
+TCP:
+
+```
+/proc/net/tcp
+```
+
+
+Load:
+
+```
+/proc/loadavg
+```
+
+
+Disk:
+
+```
+FileStore API
+```
+
+
+---
+
+# 10.2 Forbidden
+
+
+禁止：
+
+
+```
+Mock指标
+
+shell字符串模拟
+
+固定CPU%
+
+TODO
+
+空Collector
+
+随机数据
+```
+
+
+---
+
+# 10.3 Engineering Rules
+
+
+必须：
+
+- Linux兼容
+- 文件不存在优雅处理
+- 权限异常处理
+- 采集耗时记录
+- 指标带timestamp
+- 指标关联hostId
+
+
+---
+
+# 11. Test & Verification（测试与验证）
+
+
+# 11.1 Build
+
+
+```bash
+mvn clean install
+```
+
+
+---
+
+# 11.2 Run
+
+
+部署Agent：
+
+Linux服务器。
+
+
+启动：
+
+LinuxConnector。
+
+
+---
+
+# 11.3 Verification Command
+
+
+查看：
+
+
+```
+host.cpu.usage
+
+host.memory.used
+
+host.disk.used
+
+host.network.rx
+
+host.tcp.connection
+```
+
+
+---
+
+# 11.4 Expected Result
+
+
+每5秒输出：
+
+
+```
+Observation
+
+resourceType:
+
+HOST
+
+
+metrics:
+
+cpu
+
+memory
+
+disk
+
+network
+```
+
+
+---
+
+# 11.5 Troubleshooting
+
+
+无数据：
+
+检查：
+
+
+```
+1. Agent权限
+
+2. proc文件权限
+
+3. Connector状态
+
+4. Collector异常日志
+```
+
+
+---
+
+# END
+
+WP004-Linux-Connector v1.0

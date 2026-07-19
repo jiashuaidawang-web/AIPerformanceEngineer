@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # Part A: MySQL 8.0 关系和元数据存储网关
+  aipe-mysql:
+    image: mysql:8.0.33
+    container_name: aipe-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: aipe_metadata
+    ports:
+      - "3306:3306"
+    volumes:
+      - aipe-mysql-data:/var/lib/mysql
+    networks:
+      - aipe-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Part B: ClickHouse 列式高频时序指标库
+  aipe-clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: aipe-clickhouse
+    restart: always
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - aipe-clickhouse-data:/var/lib/clickhouse
+    networks:
+      - aipe-network
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+volumes:
+  aipe-mysql-data:
+  aipe-clickhouse-data:
+
+networks:
+  aipe-network:
+    driver: bridge

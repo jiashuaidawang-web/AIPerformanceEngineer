@@ -1,0 +1,15 @@
+com/aipe/observation/queue/ObservationQueue.class
+com/aipe/observation/model/Metric.class
+com/aipe/observation/emitter/ObservationEmitter.class
+com/aipe/observation/serializer/ObservationSerializer.class
+com/aipe/observation/model/Observation$ObservationState.class
+com/aipe/observation/storage/ObservationStorageWriter.class
+com/aipe/observation/validator/ObservationValidator.class
+com/aipe/observation/processor/ObservationBatcher.class
+com/aipe/observation/processor/ObservationProcessor.class
+com/aipe/observation/model/Observation.class
+com/aipe/observation/validator/ObservationValidator$ValidationResult.class
+com/aipe/observation/model/ResourceReference$ResourceReferenceBuilder.class
+com/aipe/observation/model/Observation$ObservationBuilder.class
+com/aipe/observation/model/ResourceReference.class
+com/aipe/observation/model/Metric$MetricBuilder.class

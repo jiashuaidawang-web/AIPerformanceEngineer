@@ -1,0 +1,15 @@
+com/aipe/connector/jvm/context/JvmContext$JvmContextBuilder.class
+com/aipe/connector/jvm/config/JvmConfig.class
+com/aipe/connector/jvm/collector/memory/MemoryCollector.class
+com/aipe/connector/jvm/metadata/JvmMetadata.class
+com/aipe/connector/jvm/builder/JvmObservationBuilder.class
+com/aipe/connector/jvm/collector/gc/GcCollector.class
+com/aipe/connector/jvm/collector/thread/ThreadCollector.class
+com/aipe/connector/jvm/collector/runtime/RuntimeCollector.class
+com/aipe/connector/jvm/collector/JvmCollector.class
+com/aipe/connector/jvm/collector/classloader/ClassLoaderCollector.class
+com/aipe/connector/jvm/JvmConnector.class
+com/aipe/connector/jvm/support/JmxSupport.class
+com/aipe/connector/jvm/config/JvmConfig$JvmConfigBuilder.class
+com/aipe/connector/jvm/collector/cpu/CpuCollector.class
+com/aipe/connector/jvm/context/JvmContext.class
