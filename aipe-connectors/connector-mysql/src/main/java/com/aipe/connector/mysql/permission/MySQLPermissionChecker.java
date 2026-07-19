@@ -10,36 +10,27 @@ public class MySQLPermissionChecker {
     private static final Logger log = LoggerFactory.getLogger(MySQLPermissionChecker.class);
 
     public boolean checkSelectPermission(MySQLConnection connection) {
-        try {
-            ResultSet rs = connection.executeQuery("SELECT 1");
-            rs.close();
-            return true;
-        } catch (Exception e) {
-            log.warn("SELECT permission check failed: {}", e.getMessage());
-            return false;
-        }
+        final boolean[] result = {false};
+        connection.query("SELECT 1", rs -> {
+            try { result[0] = rs.next(); } catch (Exception e) {}
+        });
+        return result[0];
     }
 
     public boolean checkShowViewPermission(MySQLConnection connection) {
-        try {
-            ResultSet rs = connection.executeQuery("SHOW PROCESSLIST");
-            rs.close();
-            return true;
-        } catch (Exception e) {
-            log.warn("SHOW VIEW permission check failed: {}", e.getMessage());
-            return false;
-        }
+        final boolean[] result = {false};
+        connection.query("SHOW PROCESSLIST", rs -> {
+            try { result[0] = true; } catch (Exception e) {}
+        });
+        return result[0];
     }
 
     public boolean checkPerformanceSchemaAccess(MySQLConnection connection) {
-        try {
-            ResultSet rs = connection.executeQuery("SELECT 1 FROM performance_schema.data_lock_waits LIMIT 1");
-            rs.close();
-            return true;
-        } catch (Exception e) {
-            log.debug("performance_schema access not available: {}", e.getMessage());
-            return false;
-        }
+        final boolean[] result = {false};
+        connection.query("SELECT 1 FROM performance_schema.data_lock_waits LIMIT 1", rs -> {
+            try { result[0] = true; } catch (Exception e) {}
+        });
+        return result[0];
     }
 
     public PermissionReport checkAll(MySQLConnection connection) {

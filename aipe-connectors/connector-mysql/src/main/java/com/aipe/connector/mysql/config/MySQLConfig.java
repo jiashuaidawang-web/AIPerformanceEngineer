@@ -22,7 +22,7 @@ public class MySQLConfig implements java.io.Serializable {
 
     public static MySQLConfig defaultConfig() {
         return MySQLConfig.builder()
-                .host("localhost").port(3306).database("mysql")
+                .host("localhost").port(3306).database("aipe_metadata")
                 .timeoutMs(5000L).intervalMs(3000L).enabled(true).build();
     }
 

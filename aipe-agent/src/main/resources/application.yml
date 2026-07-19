@@ -1,12 +1,12 @@
 # ============================================================
-# AI Performance Engineer - Agent Configuration
+# AI Performance Engineer - Agent Configuration (VM Deploy)
 # ============================================================
 
 agent:
   agentId: agent-001
   serverId: server-001
   environment: dev
-  backendUrl: http://100.97.74.45:8081
+  backendUrl: http://localhost:8081
   schedulerPoolSize: 4
   sendTimeoutMs: 5000
   connectors:
@@ -34,7 +34,8 @@ agent:
       enabled: true
       intervalMs: 30000
       properties:
-        host: 100.97.74.45
+        host: localhost
         port: "3306"
         user: root
         password: astock_root
+        database: aipe_metadata

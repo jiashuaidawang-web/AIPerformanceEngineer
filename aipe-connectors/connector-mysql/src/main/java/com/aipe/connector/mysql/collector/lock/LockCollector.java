@@ -13,20 +13,18 @@ public class LockCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SELECT COUNT(*) as wait_count FROM performance_schema.data_lock_waits");
-            if (rs.next()) r.add(b(agentId,cid,now,"mysql.lock.wait_count",rs.getDouble("wait_count"),"count",tags));
-            rs.close();
-            ResultSet ir = c.executeQuery("SHOW STATUS LIKE 'Innodb_row_lock_%'");
-            while (ir.next()) {
-                try { r.add(b(agentId,cid,now,"mysql.lock."+ir.getString("Variable_name").toLowerCase(),Double.parseDouble(ir.getString("Value")),"count",tags)); }
-                catch (NumberFormatException e) {}
+        c.query("SHOW STATUS LIKE 'Innodb_row_lock_%'", rs -> {
+            while (rs.next()) {
+                try { r.add(b(agentId,cid,now,"mysql.lock."+rs.getString("Variable_name").toLowerCase(),Double.parseDouble(rs.getString("Value")),"count",tags)); }
+                catch (Exception e) {}
             }
-            ir.close();
-            ResultSet lr = c.executeQuery("SELECT COUNT(*) as cnt FROM performance_schema.data_locks");
-            if (lr.next()) r.add(b(agentId,cid,now,"mysql.lock.current_locks",lr.getDouble("cnt"),"count",tags));
-            lr.close();
-        } catch (Exception e) { log.debug("LockCollector perf_schema not available: {}", e.getMessage()); }
+        });
+        c.query("SELECT COUNT(*) as cnt FROM information_schema.INNODB_LOCKS", rs -> {
+            while (rs.next()) {
+                try { r.add(b(agentId,cid,now,"mysql.lock.current",rs.getDouble("cnt"),"count",tags)); }
+                catch (Exception e) {}
+            }
+        });
         return r;
     }
     private ObservationData b(String a, String c, long t, String n, double v, String u, Map<String,String> tags) {

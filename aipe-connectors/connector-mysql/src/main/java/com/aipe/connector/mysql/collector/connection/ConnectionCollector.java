@@ -13,17 +13,18 @@ public class ConnectionCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SHOW STATUS LIKE 'Threads_%'");
+        c.query("SHOW STATUS LIKE 'Threads_%'", rs -> {
             while (rs.next()) {
                 try { r.add(b(agentId,cid,now,"mysql.connection."+rs.getString("Variable_name").toLowerCase(),Double.parseDouble(rs.getString("Value")),"count",tags)); }
-                catch (NumberFormatException e) {}
+                catch (Exception e) {}
             }
-            rs.close();
-            ResultSet mr = c.executeQuery("SHOW VARIABLES LIKE 'max_connections'");
-            if (mr.next()) { try { r.add(b(agentId,cid,now,"mysql.connection.max_connections",Double.parseDouble(mr.getString("Value")),"count",tags)); } catch (NumberFormatException e) {} }
-            mr.close();
-        } catch (Exception e) { log.error("connection failed", e); }
+        });
+        c.query("SHOW VARIABLES LIKE 'max_connections'", rs -> {
+            while (rs.next()) {
+                try { r.add(b(agentId,cid,now,"mysql.connection.max_connections",Double.parseDouble(rs.getString("Value")),"count",tags)); }
+                catch (Exception e) {}
+            }
+        });
         return r;
     }
     private ObservationData b(String a, String c, long t, String n, double v, String u, Map<String,String> tags) {

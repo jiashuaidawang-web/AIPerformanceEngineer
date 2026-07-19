@@ -13,28 +13,27 @@ public class SlowQueryCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SELECT COUNT(*) as cnt FROM performance_schema.events_statements_summary_by_digest WHERE AVG_TIMER_WAIT > 0 LIMIT 10");
-            if (rs.next()) {
-                ResultSet slowRs = c.executeQuery("SELECT DIGEST_TEXT, COUNT_STAR, AVG_TIMER_WAIT/1000000000 as avg_ms, SUM_TIMER_WAIT/1000000000 as total_ms FROM performance_schema.events_statements_summary_by_digest WHERE AVG_TIMER_WAIT > 0 ORDER BY AVG_TIMER_WAIT DESC LIMIT 10");
-                while (slowRs.next()) {
-                    String digest = slowRs.getString("DIGEST_TEXT");
+        // Try performance_schema first
+        c.query("SELECT DIGEST_TEXT, COUNT_STAR, AVG_TIMER_WAIT/1000000000 as avg_ms, SUM_TIMER_WAIT/1000000000 as total_ms FROM performance_schema.events_statements_summary_by_digest WHERE AVG_TIMER_WAIT > 0 ORDER BY AVG_TIMER_WAIT DESC LIMIT 10", rs -> {
+            while (rs.next()) {
+                try {
+                    String digest = rs.getString("DIGEST_TEXT");
                     if (digest != null && digest.length() > 100) digest = digest.substring(0, 100) + "...";
                     tags.put("query_digest", digest != null ? digest : "unknown");
-                    r.add(b(agentId,cid,now,"mysql.slowquery.count_star",slowRs.getDouble("COUNT_STAR"),"count",tags));
-                    r.add(b(agentId,cid,now,"mysql.slowquery.avg_ms",slowRs.getDouble("avg_ms"),"ms",tags));
-                    r.add(b(agentId,cid,now,"mysql.slowquery.total_ms",slowRs.getDouble("total_ms"),"ms",tags));
-                }
-                slowRs.close();
+                    r.add(b(agentId,cid,now,"mysql.slowquery.count_star",rs.getDouble("COUNT_STAR"),"count",tags));
+                    r.add(b(agentId,cid,now,"mysql.slowquery.avg_ms",rs.getDouble("avg_ms"),"ms",tags));
+                    r.add(b(agentId,cid,now,"mysql.slowquery.total_ms",rs.getDouble("total_ms"),"ms",tags));
+                } catch (Exception e) {}
             }
-            rs.close();
-        } catch (Exception e) {
-            log.debug("performance_schema slow query not available: {}", e.getMessage());
-            try {
-                ResultSet fb = c.executeQuery("SHOW STATUS LIKE 'Slow_queries'");
-                if (fb.next()) r.add(b(agentId,cid,now,"mysql.slowquery.count",fb.getDouble("Value"),"count",tags));
-                fb.close();
-            } catch (Exception e2) { log.warn("Fallback failed: {}", e2.getMessage()); }
+        });
+        // Fallback: slow_query_log count
+        if (r.isEmpty()) {
+            c.query("SHOW STATUS LIKE 'Slow_queries'", rs -> {
+                while (rs.next()) {
+                    try { r.add(b(agentId,cid,now,"mysql.slowquery.count",Double.parseDouble(rs.getString("Value")),"count",tags)); }
+                    catch (Exception e) {}
+                }
+            });
         }
         return r;
     }

@@ -48,8 +48,8 @@ AIPerformanceEngineer/
 
 | 服务 | 地址 | 库/Schema |
 |------|------|-----------|
-| MySQL 8.0 | 100.97.74.45:3306 | `wushi` (root / astock_root) |
-| ClickHouse 23.8 | 100.97.74.45:8123 | `wushi` (default / pamirs@123) |
+| MySQL 8.0 | localhost:3306 | `aipe_metadata` (root / astock_root) |
+| ClickHouse 23.8 | localhost:8123 | `metric_observation` (default / pamirs@123) |
 | Redis (可选) | 自备 | — |
 
 > 各模块 `application.yml` 已配置好上述连接信息。
@@ -61,16 +61,9 @@ AIPerformanceEngineer/
 ### 4.1 MySQL（元数据表）
 
 ```bash
-# 登录 MySQL
-mysql -u root -pastock_root
-
-# 执行 schema
-SOURCE aipe-backend/src/main/resources/aipe-schema.sql;
-```
-
-或命令行直接导入：
-```bash
-mysql -u root -pastock_root wushi < aipe-backend/src/main/resources/aipe-schema.sql
+# 登录 MySQL（确保 aipe_metadata 库已创建）
+mysql -u root -pastock_root -e "CREATE DATABASE IF NOT EXISTS aipe_metadata;"
+mysql -u root -pastock_root aipe_metadata < aipe-backend/src/main/resources/aipe-schema.sql
 ```
 
 创建的表：`resource`, `agent`, `connector`, `observation_metadata`, `config_version`, `deployment_record`, `audit_log`
@@ -78,8 +71,9 @@ mysql -u root -pastock_root wushi < aipe-backend/src/main/resources/aipe-schema.
 ### 4.2 ClickHouse（时序数据表）
 
 ```bash
-# 使用 clickhouse-client 连接并执行
-clickhouse-client --host 100.97.74.45 --port 8123 --user default --password pamirs@123 --database wushi --query "
+# ClickHouse 建库 + 建表
+clickhouse-client --host localhost --query "CREATE DATABASE IF NOT EXISTS metric_observation;"
+clickhouse-client --host localhost --database metric_observation --query "
 CREATE TABLE IF NOT EXISTS metric_observation (
     id UUID DEFAULT generateUUIDv4(),
     timestamp DateTime DEFAULT now(),
@@ -92,7 +86,6 @@ CREATE TABLE IF NOT EXISTS metric_observation (
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (resource_id, metric_name, timestamp);
 "
-```
 
 ---
 

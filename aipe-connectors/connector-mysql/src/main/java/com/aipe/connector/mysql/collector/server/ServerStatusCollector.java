@@ -14,22 +14,22 @@ public class ServerStatusCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SHOW GLOBAL STATUS");
-            Map<String,String> m = new HashMap<>();
+        Map<String,String> m = new HashMap<>();
+        c.query("SHOW GLOBAL STATUS", rs -> {
             while (rs.next()) m.put(rs.getString("Variable_name"), rs.getString("Value"));
-            rs.close();
-            String up = m.get("Uptime");
-            if (up != null) r.add(b(agentId,cid,now,"mysql.server.uptime",Double.parseDouble(up),"s",tags));
-            String q = m.get("Questions");
-            if (up != null && q != null) r.add(b(agentId,cid,now,"mysql.server.qps",Double.parseDouble(q)/Math.max(1,Double.parseDouble(up)),"ops",tags));
-            for (String k : KEYS) {
-                String v = m.get(k);
-                if (v != null) { try { r.add(b(agentId,cid,now,"mysql.status."+k.toLowerCase(),Double.parseDouble(v),"count",tags)); } catch (NumberFormatException e) {} }
-            }
-        } catch (Exception e) { log.error("server-status failed", e); }
+        });
+        if (m.isEmpty()) { log.debug("ServerStatus: no data"); return r; }
+        String up = m.get("Uptime");
+        if (up != null) r.add(b(agentId,cid,now,"mysql.server.uptime",parseDouble(up),"s",tags));
+        String q = m.get("Questions");
+        if (up != null && q != null) { try { r.add(b(agentId,cid,now,"mysql.server.qps",parseDouble(q)/Math.max(1,parseDouble(up)),"ops",tags)); } catch (Exception e) {} }
+        for (String k : KEYS) {
+            String v = m.get(k);
+            if (v != null) { try { r.add(b(agentId,cid,now,"mysql.status."+k.toLowerCase(),parseDouble(v),"count",tags)); } catch (Exception e) {} }
+        }
         return r;
     }
+    private double parseDouble(String s) { try { return Double.parseDouble(s); } catch (Exception e) { return 0; } }
     private ObservationData b(String a, String c, long t, String n, double v, String u, Map<String,String> tags) {
         return ObservationData.builder().agentId(a).connectorId(c).connectorType("MYSQL").targetResource("mysql-node").collectTime(t).metricName(n).metricValue(v).unit(u).tags(new HashMap<>(tags)).build();
     }

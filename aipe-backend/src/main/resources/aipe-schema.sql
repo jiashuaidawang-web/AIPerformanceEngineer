@@ -1,9 +1,11 @@
 -- ============================================================
 -- AI Performance Engineer — Backend Schema (MySQL)
 -- ============================================================
--- 执行方式：mysql -u root -p < aipe-schema.sql
+-- 执行方式：mysql -u root -p aipe_metadata < aipe-schema.sql
 -- 或复制到 MySQL 客户端执行
 -- ============================================================
+
+USE aipe_metadata;
 
 -- 资产资源表
 CREATE TABLE IF NOT EXISTS resource (

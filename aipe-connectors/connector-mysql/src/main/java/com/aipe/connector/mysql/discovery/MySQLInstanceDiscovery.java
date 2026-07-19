@@ -16,34 +16,18 @@ public class MySQLInstanceDiscovery {
         info.setHost(config.getHost());
         info.setPort(config.getPort());
 
-        try {
-            // Version
-            ResultSet rs = connection.executeQuery("SELECT VERSION() as version");
-            if (rs.next()) info.setVersion(rs.getString("version"));
-            rs.close();
+        connection.query("SELECT VERSION() as version", rs -> {
+            try { if (rs.next()) info.setVersion(rs.getString("version")); } catch (Exception e) {}
+        });
+        connection.query("SHOW VARIABLES LIKE 'server_id'", rs -> {
+            try { if (rs.next()) info.setServerId(rs.getString("Value")); } catch (Exception e) {}
+        });
+        connection.query("SELECT @@hostname as hostname", rs -> {
+            try { if (rs.next()) info.setHostname(rs.getString("hostname")); } catch (Exception e) {}
+        });
 
-            // Server ID
-            try {
-                ResultSet idRs = connection.executeQuery("SHOW VARIABLES LIKE 'server_id'");
-                if (idRs.next()) info.setServerId(idRs.getString("Value"));
-                idRs.close();
-            } catch (Exception e) { /* ignore */ }
-
-            // Hostname
-            try {
-                ResultSet hostRs = connection.executeQuery("SELECT @@hostname as hostname");
-                if (hostRs.next()) info.setHostname(hostRs.getString("hostname"));
-                hostRs.close();
-            } catch (Exception e) { /* ignore */ }
-
-            info.setConnected(true);
-            log.info("MySQL discovered: version={}, host={}, port={}", info.getVersion(), info.getHost(), info.getPort());
-
-        } catch (Exception e) {
-            log.warn("MySQL discovery failed: {}", e.getMessage());
-            info.setConnected(false);
-        }
-
+        info.setConnected(true);
+        log.info("MySQL discovered: version={}, host={}, port={}", info.getVersion(), info.getHost(), info.getPort());
         return info;
     }
 }

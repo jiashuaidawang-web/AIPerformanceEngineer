@@ -13,8 +13,7 @@ public class ProcessListCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SHOW FULL PROCESSLIST");
+        c.query("SHOW FULL PROCESSLIST", rs -> {
             int total = 0; Map<String,Integer> states = new HashMap<>();
             while (rs.next()) {
                 total++;
@@ -22,13 +21,12 @@ public class ProcessListCollector implements MySQLCollector {
                 if (st == null || st.isEmpty()) st = "NULL";
                 states.merge(st, 1, Integer::sum);
             }
-            rs.close();
             r.add(b(agentId,cid,now,"mysql.processlist.total",(double)total,"count",tags));
             for (Map.Entry<String,Integer> e : states.entrySet()) {
                 tags.put("state", e.getKey());
                 r.add(b(agentId,cid,now,"mysql.processlist.state."+e.getKey().toLowerCase(),(double)e.getValue(),"count",tags));
             }
-        } catch (Exception e) { log.error("processlist failed", e); }
+        });
         return r;
     }
     private ObservationData b(String a, String c, long t, String n, double v, String u, Map<String,String> tags) {

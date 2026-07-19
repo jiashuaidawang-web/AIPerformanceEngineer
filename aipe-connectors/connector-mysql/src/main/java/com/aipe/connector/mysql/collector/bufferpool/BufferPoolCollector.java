@@ -13,24 +13,22 @@ public class BufferPoolCollector implements MySQLCollector {
         List<ObservationData> r = new ArrayList<>();
         long now = System.currentTimeMillis();
         Map<String,String> tags = new HashMap<>(); tags.put("source","mysql");
-        try {
-            ResultSet rs = c.executeQuery("SHOW STATUS LIKE 'Innodb_buffer_pool%'");
-            Long pagesTotal = null, pagesData = null;
+        Map<String,Long> vals = new HashMap<>();
+        c.query("SHOW STATUS LIKE 'Innodb_buffer_pool%'", rs -> {
             while (rs.next()) {
-                String name = rs.getString("Variable_name");
-                String value = rs.getString("Value");
                 try {
-                    double val = Double.parseDouble(value);
-                    r.add(b(agentId,cid,now,"mysql.bufferpool."+name.toLowerCase(),val,"count",tags));
-                    if ("Innodb_buffer_pool_pages_total".equals(name)) pagesTotal = (long)val;
-                    if ("Innodb_buffer_pool_pages_data".equals(name)) pagesData = (long)val;
-                } catch (NumberFormatException e) {}
+                    String name = rs.getString("Variable_name");
+                    long val = Long.parseLong(rs.getString("Value"));
+                    vals.put(name, val);
+                    r.add(b(agentId,cid,now,"mysql.bufferpool."+name.toLowerCase(),(double)val,"count",tags));
+                } catch (Exception e) {}
             }
-            rs.close();
-            if (pagesTotal != null && pagesData != null && pagesTotal > 0) {
-                r.add(b(agentId,cid,now,"mysql.bufferpool.usage_percent",(double)pagesData/pagesTotal*100,"%",tags));
-            }
-        } catch (Exception e) { log.error("bufferpool failed", e); }
+        });
+        Long total = vals.get("Innodb_buffer_pool_pages_total");
+        Long data = vals.get("Innodb_buffer_pool_pages_data");
+        if (total != null && data != null && total > 0) {
+            r.add(b(agentId,cid,now,"mysql.bufferpool.usage_percent",(double)data/total*100,"%",tags));
+        }
         return r;
     }
     private ObservationData b(String a, String c, long t, String n, double v, String u, Map<String,String> tags) {
