@@ -1,9 +1,4 @@
-server:
-  port: 8080
-
 spring:
-  application:
-    name: aipe-config-manager
   datasource:
     mysql:
       url: jdbc:mysql://100.97.74.45:3306/wushi?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
@@ -15,8 +10,3 @@ spring:
       username: default
       password: pamirs@123
       driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
-
-aipe:
-  config:
-    heartbeat-timeout-seconds: 90
-    heartbeat-check-interval-seconds: 30

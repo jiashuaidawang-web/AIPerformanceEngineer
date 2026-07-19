@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * JVM Connector 主控类
@@ -36,7 +37,7 @@ public class JvmConnector extends AbstractConnector {
     private static final Logger log = LoggerFactory.getLogger(JvmConnector.class);
 
     private JvmConfig jvmConfig;
-    private final List<JvmCollector> collectors = new ArrayList<>();
+    private final List<JvmCollector> collectors = new CopyOnWriteArrayList<>();
     private String agentId;
     private String connectorId;
 

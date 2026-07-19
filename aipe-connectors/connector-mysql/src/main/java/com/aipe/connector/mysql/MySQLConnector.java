@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public class MySQLConnector extends AbstractConnector {
 
     private MySQLConfig mysqlConfig;
     private MySQLConnection connection;
-    private final List<MySQLCollector> collectors = new ArrayList<>();
+    private final List<MySQLCollector> collectors = new CopyOnWriteArrayList<>();
     private String agentId;
     private String connectorId;
 

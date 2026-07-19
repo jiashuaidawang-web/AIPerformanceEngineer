@@ -4,3 +4,14 @@ server:
 spring:
   application:
     name: aipe-backend
+  datasource:
+    mysql:
+      url: jdbc:mysql://100.97.74.45:3306/wushi?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      username: root
+      password: astock_root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    clickhouse:
+      url: jdbc:clickhouse://100.97.74.45:8123/wushi
+      username: default
+      password: pamirs@123
+      driver-class-name: com.clickhouse.jdbc.ClickHouseDriver

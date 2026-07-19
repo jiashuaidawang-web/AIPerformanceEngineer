@@ -2,7 +2,10 @@ package com.aipe.config.config;
 import com.aipe.config.version.ConfigVersionManager;
 import com.aipe.config.model.Config;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 import org.slf4j.LoggerFactory;
+
+@Service
 public class ConfigurationManager {
     private static final Logger log = LoggerFactory.getLogger(ConfigurationManager.class);
     private final ConfigVersionManager versionManager;

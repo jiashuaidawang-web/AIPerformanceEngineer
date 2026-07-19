@@ -3,25 +3,12 @@
 # ============================================================
 
 agent:
-  # Agent 唯一标识
   agentId: agent-001
-
-  # 归属 Server 标识
   serverId: server-001
-
-  # 运行环境: dev / test / prod
   environment: dev
-
-  # Backend 服务地址 (Observation 接收端)
-  backendUrl: http://localhost:8080
-
-  # 调度线程池大小
+  backendUrl: http://100.97.74.45:8081
   schedulerPoolSize: 4
-
-  # 采集数据发送超时 (毫秒)
   sendTimeoutMs: 5000
-
-  # Connector 配置列表
   connectors:
     - type: JVM
       enabled: true
@@ -44,10 +31,10 @@ agent:
         password: ""
 
     - type: MYSQL
-      enabled: false
+      enabled: true
       intervalMs: 30000
       properties:
-        host: localhost
-        port: 3306
+        host: 100.97.74.45
+        port: "3306"
         user: root
-        password: ""
+        password: astock_root

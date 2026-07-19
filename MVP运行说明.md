@@ -1,134 +1,263 @@
-# AI Performance Engineer MVP v1.0 运行与部署说明书
+# AI Performance Engineer — MVP 运行说明
 
-本说明书作为 **AI Performance Engineer** 首席架构师与 Java 技术负责人向研发管理层呈递的终期 MVP v1.0 物理交付大纲。
-项目完全基于 **Java 21**、**Spring Boot 3.2.5** 规范开发，实现了从探针自举、MXBean JVM 核心捕获、高可用异步 http 抛传到 Spring API 接收以及多存储（MySQL/ClickHouse）规范落地的全链路闭环开发。
+> 版本：1.0.0-SNAPSHOT | 更新：2026-07-19
 
 ---
 
-###  一、 核心数据库环境基础编排
+## 1. 项目结构
 
-为了确保环境无缝自愈和“一键启动”，特在下方配置好专为 Localhost 调试订制的 `docker-compose.yml` 环境包，其中集成了 **MySQL 8.0** 与 **ClickHouse 极速列式时序库**。
+```
+AIPerformanceEngineer/
+├── pom.xml                     # 父 POM (JDK 8, Spring Boot 2.7.18)
+├── docker-compose.yml          # 基础设施：MySQL 8 + ClickHouse
+│
+├── aipe-common/                # 公共领域模型 + 枚举
+├── aipe-connectors/            # Connector 父 POM
+│   ├── connector-sdk/          # Connector SPI 接口
+│   ├── connector-jvm/          # JVM JMX 采集
+│   ├── connector-linux/        # Linux /proc 采集
+│   ├── connector-redis/        # Redis Jedis 采集
+│   └── connector-mysql/        # MySQL JDBC 采集
+├── aipe-observation/           # Observation Pipeline 处理链
+├── aipe-agent/                 # Agent 运行时
+├── aipe-storage/               # 存储层路由
+├── aipe-config-manager/        # 控制中心 (Agent/Config/Deploy)
+└── aipe-backend/               # 后端服务 (Scenario/Query)
+```
 
-#### 1. docker-compose.yml 配置文件
-请在项目根目录下物理创建 `docker-compose.yml` 文件：
+---
+
+## 2. 技术栈
+
+| 组件 | 版本 |
+|------|------|
+| JDK | 1.8 |
+| Spring Boot | 2.7.18 |
+| Maven | 3.9+ |
+| MySQL | 8.0 |
+| ClickHouse | 23.8 |
+| Redis | (任意 5.x+) |
+| Jedis | 4.4.6 |
+| Lombok | 1.18.30 |
+
+---
+
+## 3. 基础设施
+
+依赖外部服务（已运行）：
+
+| 服务 | 地址 | 库/Schema |
+|------|------|-----------|
+| MySQL 8.0 | 100.97.74.45:3306 | `wushi` (root / astock_root) |
+| ClickHouse 23.8 | 100.97.74.45:8123 | `wushi` (default / pamirs@123) |
+| Redis (可选) | 自备 | — |
+
+> 各模块 `application.yml` 已配置好上述连接信息。
+
+---
+
+## 4. 数据库初始化
+
+### 4.1 MySQL（元数据表）
+
+```bash
+# 登录 MySQL
+mysql -u root -pastock_root
+
+# 执行 schema
+SOURCE aipe-backend/src/main/resources/aipe-schema.sql;
+```
+
+或命令行直接导入：
+```bash
+mysql -u root -pastock_root wushi < aipe-backend/src/main/resources/aipe-schema.sql
+```
+
+创建的表：`resource`, `agent`, `connector`, `observation_metadata`, `config_version`, `deployment_record`, `audit_log`
+
+### 4.2 ClickHouse（时序数据表）
+
+```bash
+# 使用 clickhouse-client 连接并执行
+clickhouse-client --host 100.97.74.45 --port 8123 --user default --password pamirs@123 --database wushi --query "
+CREATE TABLE IF NOT EXISTS metric_observation (
+    id UUID DEFAULT generateUUIDv4(),
+    timestamp DateTime DEFAULT now(),
+    resource_id String,
+    resource_type String DEFAULT 'HOST',
+    metric_name String,
+    metric_value Float64,
+    labels String DEFAULT ''
+) ENGINE = MergeTree()
+PARTITION BY toYYYYMM(timestamp)
+ORDER BY (resource_id, metric_name, timestamp);
+"
+```
+
+---
+
+## 5. 项目构建
+
+```bash
+cd /Users/null/IdeaProjects/github/AIPerformanceEngineer
+
+# 全量构建（约 8 秒）
+mvn clean install
+
+# 验证结果：12 个模块全部 BUILD SUCCESS
+```
+
+---
+
+## 6. 启动顺序
+
+### 启动 aipe-backend（后端服务，端口 8081）
+
+```bash
+java -jar aipe-backend/target/aipe-backend-1.0.0-SNAPSHOT.jar
+```
+
+### 启动 aipe-config-manager（控制中心，端口 8080）
+
+```bash
+java -jar aipe-config-manager/target/aipe-config-manager-1.0.0-SNAPSHOT.jar
+```
+
+### 启动 aipe-agent（采集 Agent）
+
+```bash
+java -jar aipe-agent/target/aipe-agent-1.0.0-SNAPSHOT.jar
+```
+
+Agent 启动后会读取 `application.yml` 中的 Connector 配置，真实采集 JVM + Linux 指标。
+
+---
+
+## 7. API 端点 (ape-config-manager)
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | /api/v1/agents/register | Agent 注册 |
+| POST | /api/v1/agents/{id}/heartbeat | Agent 心跳 |
+| GET | /api/v1/agents | Agent 列表 |
+| DELETE | /api/v1/agents/{id} | 移除 Agent |
+| POST | /api/v1/configs | 保存配置 |
+| POST | /api/v1/configs/{id}/publish | 下发配置 |
+| POST | /api/v1/deployment/deploy | 部署 Agent |
+
+### 注册 Agent 示例
+
+```bash
+curl -X POST http://localhost:8080/api/v1/agents/register \
+  -H "Content-Type: application/json" \
+  -d '{"agentId":"agent-001","serverId":"server-001","hostname":"localhost","ip":"127.0.0.1"}'
+```
+
+---
+
+## 8. Connector 配置 (aipe-agent/application.yml)
 
 ```yaml
-version: '3.8'
+agent:
+  agentId: agent-001
+  serverId: server-001
+  environment: dev
+  backendUrl: http://localhost:8080
+  schedulerPoolSize: 4
+  sendTimeoutMs: 5000
+  connectors:
+    - type: JVM        # JMX 真实采集
+      enabled: true
+      intervalMs: 30000
+    - type: LINUX      # /proc 真实采集
+      enabled: true
+      intervalMs: 30000
+    - type: REDIS      # Jedis 采集（需 Redis 运行）
+      enabled: false
+      intervalMs: 30000
+      properties:
+        host: localhost
+        port: "6379"
+    - type: MySQL      # JDBC 采集（需 MySQL 可连接）
+      enabled: false
+      intervalMs: 30000
+      properties:
+        host: localhost
+        port: "3306"
+        user: root
+        password: root
+```
 
-services:
-  # Part A: MySQL 8.0 关系和元数据存储网关
-  aipe-mysql:
-    image: mysql:8.0.33
-    container_name: aipe-mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: aipe_metadata
-    ports:
-      - "3306:3306"
-    volumes:
-      - aipe-mysql-data:/var/lib/mysql
-    networks:
-      - aipe-network
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+> 配置 `enabled: true` 即开启对应采集。Redis / MySQL 需先启动对应服务。
 
-  # Part B: ClickHouse 列式高频时序指标库
-  aipe-clickhouse:
-    image: clickhouse/clickhouse-server:23.8
-    container_name: aipe-clickhouse
-    restart: always
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-    volumes:
-      - aipe-clickhouse-data:/var/lib/clickhouse
-    networks:
-      - aipe-network
-    ulimits:
-      nofile:
-        soft: 262144
-        hard: 262144
+---
 
-volumes:
-  aipe-mysql-data:
-  aipe-clickhouse-data:
+## 9. 验证采集
 
-networks:
-  aipe-network:
-    driver: bridge
+Agent 启动后，周期采集日志：
+
+```
+[agent-scheduler-xxx] DEBUG Placeholder connector xxx collect triggered (no real data)
+```
+
+JVM + Linux Connector 真实采集日志：
+
+```
+[INFO] Connector started: id=agent-001-jvm
+[INFO] Connector started: id=agent-001-linux
+```
+
+健康检查日志（每 30 秒）：
+
+```
+[INFO] [HealthCheck] state=RUNNING, agentId=agent-001, uptime=120s, connectors=2/2
 ```
 
 ---
 
-### ️ 二、 数据库初始化与自动化 DDL 脚本
+## 10. 数据流
 
-MySQL 和 ClickHouse 容器启动成功后，请将物理文件 `aipe-backend/src/main/resources/aipe-schema.sql` 中的 DDL 指令一键拷入数据库中执行，完成以下表的物理架构初始化：
-
-#### 1. MySQL (关系度量元数据)
-- `t_user`：物理账户体系管理主表。
-- `t_project`：多组织性能场景核算项目主表。
-- `t_agent`：客户端探针实例 IP 寻址在线状态配置表。
-- `t_resource_config`：压力注入配置（如并发线程数、.jmx 脚本源）。
-- `t_pressure_session`：每次压力投射轨迹的运行生命期会话主表。
-
-#### 2. ClickHouse (高速、高吞吐列式时序核心)
-- `aipe_metrics.t_observation_data`：列式 **`MergeTree()`** 时域性能表，针对高并发时序特点，使用 category, agent_id, timestamp 进行主索引（`ORDER BY`），并将高精毫秒级时钟划分为按月大分区（`PARTITION BY toYYYYMM`）。
-- `aipe_metrics.t_timeline_events`：**`ReplacingMergeTree()`** 探针崩溃/死锁等严重报警事件轴去重自愈存储。
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                    AI Performance Engineer                        │
+│                                                                  │
+│  ┌─────────┐  JVM JMX   ┌─────────────┐                        │
+│  │ ai-agent │───Linux──────────────────▶ aipe-observation        │
+│  │  (采集)  │   Redis    │  (Pipeline)  │                        │
+│  │          │   MySQL    └──────┬───────┘                        │
+│  └─────────┘                   │                                 │
+│                                ▼                                 │
+│                    ┌─────────────────────┐                      │
+│                    │     aipe-storage    │                      │
+│                    │  (StorageRouter)    │                      │
+│                    └──────────┬──────────┘                      │
+│                               │                                  │
+│              ┌────────────────┼────────────────┐                │
+│              ▼                                 ▼                │
+│    ┌──────────────────┐              ┌─────────────────┐       │
+│    │   MySQL 8.0      │              │  ClickHouse 23.8 │       │
+│    │ (元数据/配置)     │              │ (时序指标数据)   │       │
+│    └──────────────────┘              └─────────────────┘       │
+│                                                                  │
+│  ┌────────────────┐                                              │
+│  │ aipe-config    │ ◀── REST API ──▶ 前端/Dashboard            │
+│  │ -manager:8080  │                                              │
+│  │ (Agent Registry│                                              │
+│  │  Config Center │                                              │
+│  │  Deployment)   │                                              │
+│  └────────────────┘                                              │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-###  三、 全模块编译与运行指令指南
+## 常见问题
 
-在开始本流程前，请确保本地已配置好 **Java 21** 环境变量。
+**Q: 启动报 `ClassNotFoundException: com.mysql.cj.jdbc.Driver`**
+A: 确认 MySQL Connector/J 在 classpath。MVP 阶段 Agent 通过 JDBC URL 直连 MySQL。
 
-#### Step 1: 执行 Maven 全局编译与资源打包
-如果环境内 `mvn` 命令处于全局变量中，请直接运行以下指令：
-```bash
-mvn clean package -DskipTests
-```
-*（该动作会在 `aipe-backend/target/` 下生成可以直接运行的 Spring BootFatJar 包：`aipe-backend-1.0-SNAPSHOT.jar`。）*
+**Q: Redis/MySQL 采集报连接失败**
+A: 默认 `enabled: false`。开启前确保对应服务运行，且 application.yml 中 host/port/password 正确。
 
-#### Step 2: 启动 Backend 时序接收网关服务端
-在编译所得的后台目标路径，执行引导拉起：
-```bash
-java -jar aipe-backend/target/aipe-backend-1.0-SNAPSHOT.jar
-```
-- 服务端会绑定本地 **`8080`** 端口，并在控制台输出 Spring 核心就绪及 API 路由暴露指令。
-
-#### Step 3: 配置并拉起 Client Agent 探针运行时
-1. 点击并检查探针的全局本地自举属性文件：
-   `aipe-agent/src/main/resources/aipe-agent.properties`
-   配置后端关联端点：
-   ```properties
-   backend.url=http://localhost:8080
-   ```
-2. 启动探针（AgentBootstrap 为主入口）：
-   ```bash
-   java -cp aipe-agent/target/aipe-agent-1.0-SNAPSHOT.jar:aipe-common/target/aipe-common-1.0-SNAPSHOT.jar:aipe-connectors/connector-sdk/target/connector-sdk-1.0-SNAPSHOT.jar:aipe-connectors/connector-jvm/target/connector-jvm-1.0-SNAPSHOT.jar com.ai.performance.agent.AgentBootstrap
-   ```
-   *（启动后，控制台会输出 “AIPE Agent Runtime starting...”，客户端后台心跳守护 `HeartbeatService` 将每 10 秒向 Spring 网关发出脉搏，同时常驻线程循环将每 5 秒自动打印 `JvmConnector` 捕获的各项指标并上传。）*
-
----
-
-### 🧪 四、 E2E 极速一键端到端闭环联合调测流程
-
-为了向架构委员会和研发总监提供最快的验证手段，开发团队硬核集成了 **一键式 E2E 测试引导环境**。该测试在单虚拟机下全自动管理生命周期。
-
-#### 核心调试运行命令
-```bash
-# 直接运行 Agent 模块下的闭环联调主调试类
-java -cp "aipe-agent/target/*:aipe-common/target/*:aipe-connectors/connector-sdk/target/*:aipe-connectors/connector-jvm/target/*:aipe-backend/target/*" com.ai.performance.agent.E2ETestBootstrap
-```
-
-#### 控制台完全成功预演状态
-1. **控制台输出 Stage 1**: 服务端 Spring Boot 网关开始初始化、内置 Tomcat 在 8080 端口自举。
-2. **控制台输出 Stage 2**: 探针加载、读取 `aipe-agent.properties`、发现 `JvmConnector` 编译物存在。
-3. **控制台输出 Stage 3 (时序管道连线成立)**:
-   - 心跳拦截并输出：`[HEARTBEAT HANDSHAKE RECEIVED] -> Agent [AIPE-AGENT-DEV-001] is ALIVE.`
-   - 采集器滴答输出 JVM 时域明细：`[METRIC CAPTURED] -> Category: JVM_BODY_MEMORY... (heapUsed=XXX, heapCommitted=XXX)`。
-   - 检测高并发死锁并输出：`activeThreadCount=XX, deadlockedThreadCount=0`。
-   - 瞬时 CPU 精准负荷反映：`jvmProcessCpuLoad=0.03 (3%%)`。
-4. **控制台输出 Stage 4 (优雅销毁)**:
-   - 输出 “Disposing E2E environment context resources. Clearing local threads...”。
-   - 彻底关闭所有后台 HttpClient 的轮询池、停止并释放 Spring Tomcat `8080` 端口。
-5. **控制台输出**: `Exit Code 0`，全链路打通测验宣告圆满大获全胜！
+**Q: 怎么查看采集到的指标？**
+A: MVP 阶段 ObservationSender 输出到日志。后续可对接 ClickHouse + Grafana 可视化。

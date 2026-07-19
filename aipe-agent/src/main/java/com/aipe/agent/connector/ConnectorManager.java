@@ -10,6 +10,7 @@ import com.aipe.common.enums.AgentState;
 import com.aipe.connector.sdk.lifecycle.ConnectorState;
 import com.aipe.connector.sdk.Connector;
 import com.aipe.connector.sdk.ConnectorException;
+import com.aipe.connector.sdk.config.ConnectorConfig;
 import com.aipe.connector.jvm.JvmConnector;
 import com.aipe.connector.linux.LinuxConnector;
 import com.aipe.connector.redis.RedisConnector;
@@ -79,11 +80,21 @@ public class ConnectorManager {
             try {
                 Connector connector = createConnector(item);
                 if (connector != null) {
+                    // Build ConnectorConfig from AgentConfig item
+                    ConnectorConfig connectorConfig = ConnectorConfig.builder()
+                            .type(item.getType())
+                            .enabled(item.getEnabled())
+                            .intervalMs(item.getIntervalMs())
+                            .timeoutMs(config.getSendTimeoutMs())
+                            .properties(item.getProperties())
+                            .build();
+
                     ConnectorContext context = ConnectorContext.builder()
                             .agentId(config.getAgentId())
                             .collectIntervalMs(item.getIntervalMs())
                             .collectTimeoutMs(config.getSendTimeoutMs())
                             .properties(item.getProperties())
+                            .config(connectorConfig)
                             .build();
                     connector.init(context);
                     registry.register(connector);

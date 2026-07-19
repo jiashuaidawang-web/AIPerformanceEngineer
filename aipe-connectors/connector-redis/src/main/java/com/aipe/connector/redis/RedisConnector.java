@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 
 /**
@@ -35,7 +36,7 @@ public class RedisConnector extends AbstractConnector {
 
     private RedisConfig redisConfig;
     private RedisConnection connection;
-    private final List<RedisCollector> collectors = new ArrayList<>();
+    private final List<RedisCollector> collectors = new CopyOnWriteArrayList<>();
     private String agentId;
     private String connectorId;
 

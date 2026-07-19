@@ -1,8 +1,11 @@
 package com.aipe.config.version;
 import com.aipe.config.model.Config;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 import org.slf4j.LoggerFactory;
 import java.util.concurrent.ConcurrentHashMap;
+
+@Service
 public class ConfigVersionManager {
     private static final Logger log = LoggerFactory.getLogger(ConfigVersionManager.class);
     private final ConcurrentHashMap<String, Config> configs = new ConcurrentHashMap<>();

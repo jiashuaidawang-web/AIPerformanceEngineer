@@ -19,8 +19,9 @@ import com.aipe.connector.sdk.lifecycle.ConnectorState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Linux Connector
@@ -33,7 +34,7 @@ public class LinuxConnector extends AbstractConnector {
 
     private LinuxConfig linuxConfig;
     private ProcFileReader procFileReader;
-    private final List<LinuxCollector> collectors = new ArrayList<>();
+    private final List<LinuxCollector> collectors = new CopyOnWriteArrayList<>();
     private String agentId;
     private String connectorId;
 

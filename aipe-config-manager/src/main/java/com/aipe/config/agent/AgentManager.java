@@ -6,11 +6,14 @@ import com.aipe.config.model.AgentCommand;
 import com.aipe.config.model.AgentInfo;
 import com.aipe.config.registry.AgentRegistry;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+
+@Service
 public class AgentManager {
     private static final Logger log = LoggerFactory.getLogger(AgentManager.class);
 

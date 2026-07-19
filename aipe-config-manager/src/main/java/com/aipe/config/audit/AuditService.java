@@ -1,9 +1,12 @@
 package com.aipe.config.audit;
 import org.slf4j.Logger;
+import org.springframework.stereotype.Service;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+@Service
 public class AuditService {
     private static final Logger log = LoggerFactory.getLogger(AuditService.class);
     private final List<AuditEntry> entries = new ArrayList<>();
