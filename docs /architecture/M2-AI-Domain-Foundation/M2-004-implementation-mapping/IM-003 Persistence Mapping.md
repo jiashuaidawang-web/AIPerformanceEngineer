@@ -85,7 +85,7 @@ Execution	MySQL
 下面就是正式版本。
 # AI Performance Engineer
 
-# IM-003 Database Schema Mapping
+# IM-003 Persistence Mapping
 
 Version: v1.0
 
@@ -116,26 +116,30 @@ AI World Foundation
 Implementation Mapping
         │
         ├── Domain Model
-        ├── ★ Database Schema ★
+        ├── ★ Persistence Mapping ★
         ├── ClickHouse
         ├── Graph
         └── AI Engine
 ```
 
-Database Schema Mapping 定义 AI World 在关系型数据库中的唯一持久化规范。
+Persistence Mapping 定义 AI World 中所有 Domain Object 的 Primary Storage。
+
+每种对象有且仅有一种主存储。
+
+MySQL Schema 是 Persistence Mapping 的一部分。
 
 ---
 
 # Chapter 1 Purpose（设计目标）
 
-本规范定义 AI Performance Engineer 在关系型数据库中的统一 Schema。
+本规范定义 AI Performance Engineer 所有 Domain Object 的统一持久化映射。
 
 目标：
 
-- 建立统一的数据模型
-- 保证 Domain 与数据库解耦
-- 明确哪些对象进入 MySQL
-- 明确哪些对象不允许进入 MySQL
+- 建立统一 Primary Storage 映射
+- 保证 Domain 与存储解耦
+- 明确哪种对象进入关系数据库
+- 明确哪种对象不允许进入关系数据库
 - 为 Repository 提供唯一持久化规范
 
 数据库不是领域模型。
@@ -599,7 +603,7 @@ Schema：
 
 # Chapter 15 Freeze Statement
 
-Database Schema Mapping 是 AI Performance Engineer 唯一合法的关系数据库规范。
+Persistence Mapping 是 AI Performance Engineer 唯一合法的持久化映射规范。
 
 任何数据库设计必须来源于 World Model。
 

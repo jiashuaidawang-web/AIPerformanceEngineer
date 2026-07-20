@@ -43,8 +43,6 @@
         <module>aipe-agent</module>
         <module>aipe-storage</module>
         <module>aipe-config-manager</module>
-        <module>aipe-domain</module>
-        <module>aipe-infrastructure</module>
         <module>aipe-backend</module>
     </modules>
 
