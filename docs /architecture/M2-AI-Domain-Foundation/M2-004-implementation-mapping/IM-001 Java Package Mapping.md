@@ -1,247 +1,726 @@
-IM-001-Java-Package-Mapping.md
-AI Performance Engineer
-M2-004 Implementation Mapping
-IM-001 Java Package Mapping
+# AI Performance Engineer
+
+# IM-001 Java Package Mapping
+
 Version: v1.0
-Status: Draft
-Milestone: M2 – AI Domain Foundation
 
-1. 设计目标
-   建立统一的Java包结构，和13个世界模型、三大架构法则、Constitution v1.0完全对齐
-   明确模块边界，禁止跨模块反向依赖，落实所有架构约束
-   输出Rowboat可直接遵循的编码说明书，避免理解偏差和返工
-   预留扩展能力，未来新增模块、新增Resource类型时不需要修改现有包结构
-2. 顶层包结构
-   所有Java代码统一放在com.aipe根包下，顶层模块划分如下：
+Status: Frozen
 
-text
-复制
+Milestone: M2.5 – Implementation Mapping
+
+Document Type: Engineering Specification
+
+---
+
+# （固定第一页）
+
+# AI World Overview
+
+（引用统一封面）
+
+---
+
+# （固定第二页）
+
+# Document Position
+
+```
+AI World Foundation
+        │
+        ▼
+Implementation Mapping
+        │
+        ├── IM-001 Java Package Mapping
+        ├── IM-002 Domain Model Mapping
+        ├── IM-003 Database Schema Mapping
+        ├── IM-004 ClickHouse Mapping
+        ├── IM-005 Graph Mapping
+        ├── IM-006 REST API Mapping
+        ├── IM-007 AI Engine Mapping
+        ├── IM-008 Connector Mapping
+        ├── IM-009 Repository Mapping
+        ├── IM-010 Service Mapping
+        └── IM-011 Implementation Rules
+```
+
+Java Package Mapping 是整个工程代码结构的唯一标准。
+
+---
+
+# Chapter 1 Purpose（设计目标）
+
+本规范定义 AI Performance Engineer 的 Java 包结构及模块边界。
+
+目标：
+
+建立统一、稳定、可扩展的工程目录。
+
+任何 Java 类必须归属于唯一 Package。
+
+任何 Package 必须拥有唯一职责。
+
+Package 的设计必须反映 AI World，而不是数据库或框架。
+
+---
+
+# Chapter 2 Design Philosophy（设计哲学）
+
+Package 是世界模型的工程映射。
+
+Package 的划分遵循：
+
+Business
+
+↓
+
+World Model
+
+↓
+
+Engineering
+
+而不是：
+
+Controller
+
+↓
+
+Service
+
+↓
+
+DAO
+
+AI Performance Engineer 采用：
+
+DDD + Clean Architecture + Hexagonal Architecture。
+
+---
+
+# Chapter 3 Top Level Package
+
+统一 Root Package：
+
+```
 com.aipe
-├── domain                ← 核心领域层，对应所有世界模型，不依赖任何外层
-├── connector             ← 采集器组件，负责数据采集，禁止维护领域数据
-├── agent                 ← 代理组件，负责执行操作，禁止维护领域数据
-├── pipeline              ← 数据处理流水线，负责数据清洗、转换、路由
-├── storage               ← 存储抽象层，定义所有存储接口
-├── ai                    ← AI引擎层，负责推理、学习、推荐
-├── api                   ← REST API接入层，负责对外提供接口
-├── service               ← 业务服务层，负责跨领域逻辑编排
-├── repository            ← 数据访问层，实现领域仓储接口
-├── infrastructure        ← 基础设施层，包含防腐层、工具、中间件适配
-├── common                ← 公共组件层，包含词汇、治理、常量、事件
-└── Application.java      ← 启动类
-3. 公共组件包映射（common）
-   落实M2-005 AI World Vocabulary、Constitution v1.0治理要求：
+```
 
-text
-复制
-com.aipe.common
-├── vocabulary            ← M2-005 词汇管理
-│   ├── VocabularyRegistry.java        ← 统一术语注册中心
-│   ├── TermValidator.java              ← 术语校验器，禁止自定义术语
-│   └── VocabularyConstants.java       ← 所有官方术语常量
-│
-├── governance            ← Constitution 治理
-│   ├── RfcService.java                ← RFC流程管理
-│   ├── ConstitutionValidator.java     ← 宪法约束校验
-│   ├── SpecificationChecker.java      ← 规范一致性校验
-│   └── VersionManager.java            ← 版本与冻结状态管理
-│
-├── event                 ← 领域事件
-│   ├── DomainEvent.java               ← 领域事件基类
-│   ├── EventPublisher.java            ← 事件发布接口
-│   └── EventSubscriber.java           ← 事件订阅接口
-│
-├── util                  ← 工具类
-│   ├── TimeUtils.java                  ← 时间处理工具
-│   ├── JsonUtils.java                  ← JSON序列化工具
-│   ├── ValidateUtils.java              ← 通用校验工具
-│   └── HashUtils.java                  ← 哈希计算工具
-│
-└── constant              ← 全局常量
-├── ApiConstants.java               ← API相关常量
-├── StorageConstants.java           ← 存储相关常量
-└── AiConstants.java                ← AI相关常量
-4. 领域模块包映射（domain）
-   严格对齐AI World Evolution Chain，每个包标注遵循的架构法则：
+一级 Package 固定如下：
 
-text
-复制
-com.aipe.domain
-├── resource              ← M2-007 Unified Resource Model | 遵循Law-001
-│   ├── entity            ← 领域实体
-│   │   ├── Resource.java
-│   │   ├── ResourceType.java
-│   │   ├── ResourceCategory.java
-│   │   ├── ResourceStatus.java
-│   │   ├── ResourceLabel.java
-│   │   └── ResourceAttribute.java
-│   ├── repository        ← 仓储接口（实现类在repository层）
-│   │   └── ResourceRepository.java
-│   ├── service           ← 领域服务接口（实现类在service层）
-│   │   ├── ResourceDiscoveryService.java
-│   │   ├── ResourceLifecycleManager.java
-│   │   └── ResourceRegistry.java
-│   ├── validator         ← 校验器
-│   │   └── ResourceValidator.java
-│   └── dto               ← 领域内部数据传输对象
-│       └── ResourceDTO.java
-│
-├── observation           ← M2-006 Observation Model | 遵循Law-002
-│   ├── entity
-│   │   ├── Observation.java
-│   │   ├── ObservationType.java
-│   │   ├── ObservationSource.java
-│   │   └── ObservationLabel.java
-│   ├── repository
-│   │   └── ObservationRepository.java
-│   ├── service
-│   │   ├── ObservationPipeline.java
-│   │   └── ObservationFactory.java
-│   ├── validator
-│   │   └── ObservationValidator.java
-│   └── dto
-│       └── ObservationDTO.java
-│
-├── relationship          ← M2-008 Relationship Model | 遵循Law-000
-│   ├── entity
-│   │   ├── Relationship.java
-│   │   ├── RelationshipType.java
-│   │   ├── RelationshipDirection.java
-│   │   └── RelationshipStatus.java
-│   ├── repository
-│   │   └── RelationshipRepository.java
-│   ├── service
-│   │   ├── RelationshipDiscoveryService.java
-│   │   └── RelationshipGraph.java
-│   ├── validator
-│   │   └── RelationshipValidator.java
-│   └── dto
-│       └── RelationshipDTO.java
-│
-├── topology              ← M2-009 Topology Model | 遵循Law-000
-│   ├── model
-│   │   ├── Topology.java
-│   │   ├── TopologyNode.java
-│   │   ├── TopologyEdge.java
-│   │   └── TopologyView.java
-│   ├── service
-│   │   ├── ProjectionEngine.java
-│   │   ├── GraphBuilder.java
-│   │   ├── TopologyService.java
-│   │   └── TopologyQuery.java
-│   └── renderer
-│       └── TopologyRenderer.java
-│
-├── timeline              ← M2-010 Timeline Model | 遵循Law-000
-│   ├── entity
-│   │   ├── Timeline.java
-│   │   ├── TimelineWindow.java
-│   │   └── TimelineEvent.java
-│   ├── repository
-│   │   └── TimelineRepository.java
-│   ├── service
-│   │   ├── TimelineBuilder.java
-│   │   ├── TimelineService.java
-│   │   ├── TimelineReplayEngine.java
-│   │   └── TimelineQuery.java
-│   └── validator
-│       └── TimelineValidator.java
-│
-├── evidence              ← M2-011 Evidence Model | 遵循Constitution Article 8
-│   ├── entity
-│   │   ├── Evidence.java
-│   │   ├── EvidenceType.java
-│   │   └── EvidenceStatus.java
-│   ├── repository
-│   │   └── EvidenceRepository.java
-│   ├── service
-│   │   ├── EvidenceBuilder.java
-│   │   ├── EvidenceEngine.java
-│   │   ├── EvidenceReasoner.java
-│   │   └── ConfidenceCalculator.java
-│   ├── validator
-│   │   └── EvidenceValidator.java
-│   └── dto
-│       └── EvidenceDTO.java
-│
-├── knowledge             ← M2-012 Knowledge Model | 遵循Constitution Article 9
-│   ├── entity
-│   │   ├── Knowledge.java
-│   │   ├── KnowledgePattern.java
-│   │   └── KnowledgeVersion.java
-│   ├── repository
-│   │   └── KnowledgeRepository.java
-│   ├── service
-│   │   ├── KnowledgeBuilder.java
-│   │   ├── KnowledgeEngine.java
-│   │   ├── RecommendationEngine.java
-│   │   └── KnowledgeRegistry.java
-│   └── validator
-│       └── KnowledgeValidator.java
-│
-├── optimization          ← M2-013 Execution & Optimization Model | 遵循Constitution Article 10
-│   ├── entity
-│   │   ├── Recommendation.java
-│   │   ├── ExecutionPlan.java
-│   │   ├── ExecutionRecord.java
-│   │   ├── OptimizationResult.java
-│   │   └── RollbackRecord.java
-│   ├── repository
-│   │   └── OptimizationRepository.java
-│   ├── service
-│   │   ├── ExecutionService.java
-│   │   └── OptimizationEngine.java
-│   └── validator
-│       └── OptimizationValidator.java
-│
-└── event                 ← 领域事件定义
-├── ResourceCreatedEvent.java
-├── ResourceUpdatedEvent.java
-├── ObservationGeneratedEvent.java
-├── EvidenceGeneratedEvent.java
-└── KnowledgeVerifiedEvent.java
-5. 基础设施层包映射（infrastructure）
-   负责隔离外部系统，实现防腐层：
+```
+com.aipe
 
-text
-复制
-com.aipe.infrastructure
-├── anticorruption        ← 防腐层，隔离Connector/Agent/外部系统
-│   ├── ConnectorAdapter.java          ← 采集器适配器
-│   ├── AgentAdapter.java              ← 代理适配器
-│   └── ExternalSystemAdapter.java     ← 外部系统适配器
-│
-├── storage               ← 存储实现
-│   ├── mysql             ← MySQL存储实现
-│   ├── clickhouse        ← ClickHouse存储实现
-│   ├── graph             ← 图数据库存储实现
-│   └── redis             ← Redis缓存实现
-│
-└── config                ← 配置类
-├── StorageConfig.java
-├── AiConfig.java
-└── ConnectorConfig.java
-6. 分层依赖约束
-   所有代码必须严格遵循以下依赖关系，禁止反向依赖：
+├── bootstrap
+├── common
+├── config
+├── api
+├── application
+├── domain
+├── repository
+├── infrastructure
+├── connector
+├── ai
+├── scheduler
+├── event
+├── security
+├── integration
+└── test
+```
 
-核心领域层（domain）：不依赖任何外层，仅内部依赖遵循AI World Evolution Chain顺序：
-resource → observation → relationship → topology → timeline → evidence → knowledge → optimization
-业务服务层（service）：可依赖domain、repository、common层，不可依赖api、connector、ai层
-API接入层（api）：可依赖service、common层，不可直接依赖domain、repository层
-AI引擎层（ai）：可依赖domain、repository、common层，不可被domain层依赖
-采集/代理层（connector/agent/pipeline）：可依赖domain、storage、common层，不可互相依赖
-基础设施层（infrastructure）：可依赖所有层，但仅提供技术支持，不实现业务逻辑
-7. 实现要求
-   所有领域实体必须实现Serializable接口，必须包含无参构造函数，统一使用Lombok注解
-   所有仓储接口、服务接口必须定义在domain层，实现类放在对应外层
-   所有校验器必须独立实现，不允许在实体类、Service中写校验逻辑
-   所有外部系统调用必须经过防腐层适配，不允许直接调用外部接口
-   所有领域事件必须继承DomainEvent基类，使用统一的事件发布接口
-   所有包结构必须严格对齐本规范，新增类必须放到对应包中，不允许随意新增包路径
-8. 验收标准
-   ✔ 包结构与13个世界模型完全一一对应
-   ✔ 所有模块都标注了遵循的架构法则/宪法条款
-   ✔ 依赖关系符合要求，无反向依赖
-   ✔ 所有核心类都有明确的职责定义，Rowboat可直接编码
-   ✔ 预留了扩展能力，新增模块不需要修改现有包结构
-   确认IM-001的内容没有问题后，我们继续编写IM-002-Domain-Model-Mapping.md。
+一级 Package 禁止新增。
+
+新增一级 Package 必须经过 RFC。
+
+---
+
+# Chapter 4 Package Responsibilities
+
+## bootstrap
+
+应用启动。
+
+SpringBoot。
+
+AutoConfiguration。
+
+生命周期管理。
+
+---
+
+## common
+
+公共组件。
+
+工具类。
+
+异常。
+
+Result。
+
+Constants。
+
+禁止放业务逻辑。
+
+---
+
+## config
+
+Spring 配置。
+
+Bean 注册。
+
+配置读取。
+
+AutoConfiguration。
+
+禁止业务代码。
+
+---
+
+## api
+
+REST API。
+
+Controller。
+
+DTO。
+
+Request。
+
+Response。
+
+OpenAPI。
+
+禁止业务逻辑。
+
+禁止 Repository。
+
+---
+
+## application
+
+应用服务。
+
+事务。
+
+流程编排。
+
+Command。
+
+Query。
+
+UseCase。
+
+AI Workflow。
+
+这里只负责：
+
+协调。
+
+禁止保存状态。
+
+---
+
+## domain
+
+核心领域。
+
+AI World。
+
+纯业务对象。
+
+不得依赖 Spring。
+
+不得依赖 MyBatis。
+
+不得依赖数据库。
+
+---
+
+## repository
+
+Repository Interface。
+
+Repository Implementation。
+
+统一数据访问。
+
+Application 永远通过 Repository 获取数据。
+
+---
+
+## infrastructure
+
+基础设施。
+
+MySQL。
+
+ClickHouse。
+
+Neo4j。
+
+Redis。
+
+Kafka。
+
+HTTP。
+
+SDK。
+
+第三方组件。
+
+---
+
+## connector
+
+Connector SDK。
+
+JVM。
+
+Linux。
+
+Redis。
+
+MySQL。
+
+Kafka。
+
+Prometheus。
+
+OTel。
+
+所有采集器。
+
+---
+
+## ai
+
+AI Engine。
+
+Reasoning。
+
+Evidence。
+
+Knowledge。
+
+Recommendation。
+
+Optimization。
+
+Prompt。
+
+Embedding。
+
+LLM。
+
+---
+
+## scheduler
+
+定时任务。
+
+后台扫描。
+
+清理。
+
+同步。
+
+重建。
+
+---
+
+## event
+
+领域事件。
+
+Event Bus。
+
+Message。
+
+Observer。
+
+---
+
+## security
+
+认证。
+
+授权。
+
+RBAC。
+
+Token。
+
+API Security。
+
+---
+
+## integration
+
+第三方系统集成。
+
+Webhook。
+
+CMDB。
+
+Jenkins。
+
+GitLab。
+
+Kubernetes。
+
+---
+
+## test
+
+测试。
+
+Fixture。
+
+Fake。
+
+Benchmark。
+
+---
+
+# Chapter 5 Domain Package Mapping
+
+domain 固定目录：
+
+```
+domain
+
+├── resource
+├── observation
+├── relationship
+├── topology
+├── timeline
+├── evidence
+├── verification
+├── knowledge
+├── recommendation
+├── execution
+├── optimization
+└── shared
+```
+
+shared：
+
+只放：
+
+Value Object。
+
+Enum。
+
+Specification。
+
+Policy。
+
+禁止业务流程。
+
+---
+
+# Chapter 6 Application Package Mapping
+
+```
+application
+
+├── command
+├── query
+├── service
+├── workflow
+├── mapper
+├── dto
+└── facade
+```
+
+Application：
+
+负责：
+
+编排。
+
+协调。
+
+事务。
+
+调用 Domain。
+
+不得直接操作数据库。
+
+---
+
+# Chapter 7 Infrastructure Package Mapping
+
+```
+infrastructure
+
+├── mysql
+├── clickhouse
+├── graph
+├── redis
+├── kafka
+├── http
+├── persistence
+├── discovery
+└── metrics
+```
+
+所有第三方依赖：
+
+统一放入 Infrastructure。
+
+禁止 Domain 引用 Infrastructure。
+
+---
+
+# Chapter 8 Connector Package Mapping
+
+```
+connector
+
+├── sdk
+├── runtime
+├── jvm
+├── linux
+├── mysql
+├── redis
+├── kafka
+├── prometheus
+├── otel
+└── extension
+```
+
+Connector：
+
+统一输出：
+
+Observation。
+
+禁止 Connector 输出：
+
+Evidence。
+
+Knowledge。
+
+Recommendation。
+
+---
+
+# Chapter 9 AI Package Mapping
+
+```
+ai
+
+├── timeline
+├── evidence
+├── verification
+├── knowledge
+├── recommendation
+├── execution
+├── optimization
+├── reasoning
+├── prompt
+├── memory
+└── llm
+```
+
+AI：
+
+只消费 Domain。
+
+禁止直接访问 Connector。
+
+禁止直接访问 Controller。
+
+---
+
+# Chapter 10 Dependency Rules
+
+统一依赖方向：
+
+```
+API
+    │
+    ▼
+Application
+    │
+    ▼
+Domain
+    │
+    ▼
+Repository
+    │
+    ▼
+Infrastructure
+```
+
+Connector：
+
+独立产生 Observation。
+
+AI：
+
+只能消费 Domain。
+
+禁止：
+
+Repository → API。
+
+禁止：
+
+Infrastructure → Domain。
+
+禁止：
+
+Domain → Spring。
+
+禁止循环依赖。
+
+---
+
+# Chapter 11 Package Naming Rules
+
+统一采用：
+
+全部小写。
+
+单数名词。
+
+禁止：
+
+util
+
+manager
+
+helper
+
+misc
+
+temp
+
+common2
+
+test1
+
+demo
+
+new
+
+old
+
+v2
+
+禁止缩写。
+
+例如：
+
+observation
+
+不要：
+
+obs。
+
+---
+
+# Chapter 12 Example Package Layout
+
+```
+com.aipe
+
+├── api
+│     └── observation
+│
+├── application
+│     └── observation
+│
+├── domain
+│     └── observation
+│
+├── repository
+│     └── observation
+│
+├── infrastructure
+│     └── clickhouse
+│
+└── ai
+      └── evidence
+```
+
+Observation 在所有层均保持统一命名。
+
+---
+
+# Chapter 13 Rowboat Coding Rules
+
+Rowboat 必须遵守：
+
+不得新增一级 Package。
+
+不得改变 Package 名称。
+
+不得跨层引用。
+
+所有新增类必须放入规定 Package。
+
+任何违反 Package Mapping 的代码必须拒绝提交。
+
+Package Mapping 高于代码实现。
+
+---
+
+# Chapter 14 Acceptance Criteria
+
+必须满足：
+
+✔ Root Package 唯一。
+
+✔ 一级 Package 固定。
+
+✔ Domain 独立。
+
+✔ Infrastructure 独立。
+
+✔ Connector 独立。
+
+✔ AI 独立。
+
+✔ API 不包含业务。
+
+✔ Package 无循环依赖。
+
+✔ Package 命名统一。
+
+✔ 所有新增代码均可归属唯一 Package。
+
+---
+
+# Chapter 15 Freeze Statement
+
+Java Package Mapping 是 AI Performance Engineer 唯一合法的工程目录规范。
+
+任何 Java 文件必须首先符合本规范。
+
+任何 Package 调整必须通过 RFC。
+
+禁止为了开发方便修改 Package 结构。
+
+Status：
+
+Frozen.
+
+我对 IM 系列做一个升级建议（建议现在冻结）
+
+随着 IM-001 完成，我发现 IM 的作用已经超出了"映射"。
+
+它实际上在定义整个工程的"施工规范"。
+
+因此，我建议后续 IM-002 ~ IM-011 统一采用下面的原则：
+
+每一份 IM 文档都必须最终回答一个问题：
+
+"如果 Rowboat 完全按照这份文档编码，它是否能够写出一致、可运行、可维护的代码，而无需再自行做架构决策？"
+
+如果答案是否定的，那么说明这份 IM 还不够完整。
+
+这也将成为我们后续所有 Implementation Mapping 文档的质量标准。

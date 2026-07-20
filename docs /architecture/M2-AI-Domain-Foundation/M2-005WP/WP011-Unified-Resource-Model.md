@@ -1,4 +1,4 @@
-WP011-Unified-Resource-Model.md
+·WP011-Unified-Resource-Model.md
 AI Performance Engineer
 WP011 Unified Resource Model Blueprint v1.0
 Document Type:
