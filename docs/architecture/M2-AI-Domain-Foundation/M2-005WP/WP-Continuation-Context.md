@@ -222,17 +222,33 @@ API ↓ Application ↓ Domain ↓ Repository ↓ Infrastructure
 | Jedis | 4.4.6 |
 | Hutool | 5.8.22 |
 | Lombok | 1.18.30 |
-| MySQL | 5.7+ / 8.0 |
-| ClickHouse | 21+ |
+| MySQL | 8.0.33（Docker Compose）| 元数据存储 |
+| ClickHouse | 23.8（Docker Compose）| 时序存储 |
 
 **新增任何依赖必须先征得用户同意。**
+
+### 部署架构（Docker Compose）
+
+所有数据库部署在 Docker 中（docker-compose.yml 已定义）：
+
+| 容器 | 镜像 | 端口 | 容器名 |
+|------|------|------|--------|
+| MySQL | mysql:8.0.33 | 3306:3306 | aipe-mysql |
+| ClickHouse | clickhouse/clickhouse-server:23.8 | 8123:8123 / 9000:9000 | aipe-clickhouse |
+
+启动：`docker-compose up -d`（数据持久化到 Docker Volume）
 
 ### 数据库连接
 
 | 存储 | 地址 | 数据库 | 认证 |
 |------|------|--------|------|
-| MySQL | 124.223.20.245:3306 | aipe_metadata | root / astock_root |
-| ClickHouse | 124.223.20.245:8123 | metric_observation | default / pamirs@123 |
+| MySQL | localhost:3306 | aipe_metadata | root / root |
+| ClickHouse | localhost:8123 | metric_observation | default / "" |
+
+**注意**：
+- MySQL 8.0（Docker）支持 `ADD COLUMN IF NOT EXISTS` 和 `CREATE INDEX IF NOT EXISTS`（迁移脚本可简化）
+- Docker 重启后数据不丢失（持久化到 docker volume）
+- 连接失败时先确认 `docker ps` 确认容器运行 + 端口映射正确
 
 ### MySQL resource 表（已迁移）
 
@@ -357,13 +373,12 @@ AIPerformanceEngineer/
 
 | 问题 | 解决方式 |
 |------|---------|
-| MySQL 5.x 不支持 ADD COLUMN IF NOT EXISTS | SET @col_exists + PREPARE/EXECUTE |
-| Spring Populator 不支持 DELIMITER | ALTER 列用 Spring 脚本，索引用 Java |
-| MyBatis Plus 乐观锁需要 OptimisticLockerInnerInterceptor | 已加到 MyBatisPlusConfig |
-| domain 手动 version++ 冲突 | 删除 domain 里 version++ |
-| IM 文档列名 vs 实际 DB | 以实际 DB 为准 |
+| domain 手动 version++ 与 MyBatis Plus 冲突 | 删除 domain 里 version++ |
+| IM 文档列名 vs 实际 DB | 以实际 DB 为准（diagnose 后调整 PO）|
 | Spring Boot 启动慢（~45s）| macOS DNS：/etc/hosts 加 localhost |
 | 中文 URL 编码 | curl 参数 URL 编码 |
+| Docker 数据库连接失败 | `docker ps` 确认容器运行 + localhost 连接 |
+| Docker 数据库数据丢失 | 确认 docker volume 挂载（aipe-mysql-data / aipe-clickhouse-data）|
 
 ---
 
