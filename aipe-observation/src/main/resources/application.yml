@@ -1,0 +1,18 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: aipe-observation
+  datasource:
+    clickhouse:
+      url: jdbc:clickhouse://124.223.220.245:8123/metric_observation?compress=0
+      username: default
+      password: pamirs@123
+      driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+
+# 日志
+logging:
+  level:
+    com.aipe.observation: DEBUG
+    com.aipe.observation.infrastructure: DEBUG

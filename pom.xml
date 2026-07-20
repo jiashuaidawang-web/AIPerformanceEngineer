@@ -44,6 +44,7 @@
         <module>aipe-storage</module>
         <module>aipe-config-manager</module>
         <module>aipe-resource</module>
+        <module>aipe-relationship</module>
         <module>aipe-backend</module>
     </modules>
 
