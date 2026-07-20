@@ -1,0 +1,1 @@
+定义每个 Milestone 的质量门禁和验收方式（M1 Gate、M2 Gate……）。
