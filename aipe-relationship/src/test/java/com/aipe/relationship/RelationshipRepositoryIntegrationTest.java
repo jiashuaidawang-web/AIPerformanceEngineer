@@ -55,11 +55,28 @@ public class RelationshipRepositoryIntegrationTest {
     @Before
     public void setUp() {
         log.info("=== Relationship Integration Test Setup ===");
+        // 确保 resource 表存在（测试用，避免依赖外部建表）
+        initResourceTable();
         // 新建 4 个测试用 Resource（直接插 resource 表，避免依赖 aipe-resource 模块）
         orderId = createTestResource("order-svc-test", "测试订单系统");
         invId = createTestResource("inventory-svc-test", "测试订单系统");
         redisId = createTestResource("redis-cluster-test", "测试订单系统");
         hostId = createTestResource("linux-host-test", "测试订单系统");
+    }
+
+    private void initResourceTable() {
+        jdbcTemplate.execute("DROP TABLE IF EXISTS resource");
+        jdbcTemplate.execute(
+                "CREATE TABLE resource (" +
+                        "resource_id VARCHAR(64) PRIMARY KEY," +
+                        "resource_name VARCHAR(256)," +
+                        "resource_type VARCHAR(32)," +
+                        "resource_status VARCHAR(16) NOT NULL DEFAULT 'RUNNING'," +
+                        "business_system VARCHAR(128)," +
+                        "environment VARCHAR(64)," +
+                        "version INT NOT NULL DEFAULT 1," +
+                        "deleted TINYINT NOT NULL DEFAULT 0" +
+                        ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
     @After
