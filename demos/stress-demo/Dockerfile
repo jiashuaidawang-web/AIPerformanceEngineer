@@ -1,7 +1,7 @@
 # ============================================================
-# StressDemo — Dockerfile (Spring Boot 3.3.7 + JDK 21)
+# StressDemo — Dockerfile (Spring Boot 2.7.18 + JDK 1.8)
 # ============================================================
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM maven:3.9-eclipse-temurin-8 AS builder
 
 WORKDIR /app
 COPY pom.xml .
@@ -11,9 +11,9 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Runtime
-FROM eclipse-temurin:21-jre-jammy
+FROM openjdk:8-jdk-alpine
 
-RUN groupadd -r stress && useradd -r -g stress stress \
+RUN addgroup -S stress && adduser -S stress -G stress \
     && mkdir -p /app && chown -R stress:stress /app
 
 WORKDIR /app

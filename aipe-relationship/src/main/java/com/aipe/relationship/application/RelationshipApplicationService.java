@@ -79,7 +79,7 @@ public class RelationshipApplicationService {
             throw new IllegalArgumentException("RelationshipId cannot be null");
         }
         Optional<Relationship> existing = relationshipRepository.findById(id);
-        if (existing.isEmpty()) {
+        if (!existing.isPresent()) {
             return false;
         }
         boolean deleted = relationshipRepository.deleteById(id);

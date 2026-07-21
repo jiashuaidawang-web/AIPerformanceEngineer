@@ -12,13 +12,7 @@ import java.lang.management.MemoryUsage;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.IntStream;
 
-/**
- * 综合压测靶机 — 覆盖多种瓶颈类型
- *
- * 端口: 8090 (与 AIPE 808x 系列不冲突)
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -29,69 +23,54 @@ public class StressController {
     @Value("${spring.datasource.mysql.jdbc-url:}")
     private String dbUrl;
 
-    /** 内存泄漏模拟用：持续增长且不被 GC 的 List */
-    private static final List<byte[]> MEMORY_LEAK = new ArrayList<>();
-    private static final Map<String, Object> CACHE = new ConcurrentHashMap<>();
+    private static final List<byte[]> MEMORY_LEAK = new ArrayList<byte[]>();
+    private static final Map<String, Object> CACHE = new ConcurrentHashMap<String, Object>();
 
-    // ==================== DB 场景 ====================
+    private static Map<String, Object> m(Object... kvs) {
+        Map<String, Object> map = new HashMap<String, Object>();
+        for (int i = 0; i < kvs.length; i += 2) {
+            map.put((String) kvs[i], kvs[i + 1]);
+        }
+        return map;
+    }
 
-    /**
-     * GET /api/products?page=1&size=100
-     * 标准分页查询 — 基线接口
-     */
     @GetMapping("/products")
     public Object listProducts(@RequestParam(defaultValue = "1") int page,
                                @RequestParam(defaultValue = "100") int size) {
         long start = System.currentTimeMillis();
         List<Product> products = productService.findAll(page, Math.min(size, 500));
-        return m("data", , "products", , "page", , "page", , "size", , "products.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("data", products, "page", page, "size", products.size(),
+                "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    /**
-     * GET /api/products/{id}
-     * 单条查询 — 命中主键索引
-     */
     @GetMapping("/products/{id}")
     public Object getProduct(@PathVariable Long id) {
         long start = System.currentTimeMillis();
         Product p = productService.findById(id);
-        return m("data", , "p", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("data", p, "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    /**
-     * GET /api/products/search?keyword=phone
-     * 全表扫描 — 模拟慢查询瓶颈 (LIKE %keyword%)
-     */
     @GetMapping("/products/search")
     public Object search(@RequestParam(defaultValue = "a") String keyword) {
         long start = System.currentTimeMillis();
         List<Product> results = productService.search(keyword);
-        return m("data", , "results", , "keyword", , "keyword", , "hits", , "results.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("data", results, "keyword", keyword, "hits", results.size(),
+                "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    /**
-     * POST /api/products
-     * DB 写入 — 插入新记录
-     */
     @PostMapping("/products")
     public Object createProduct(@RequestBody Product product) {
         long start = System.currentTimeMillis();
         if (product.getCreatedAt() == null) product.setCreatedAt(LocalDateTime.now());
         Product saved = productService.create(product);
-        return m("data", , "saved", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("data", saved, "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    // ==================== CPU 密集场景 ====================
-
-    /**
-     * GET /api/compute/fibonacci/{n}
-     * CPU 密集 — 递归计算斐波那契 (n 建议 30~45)
-     */
     @GetMapping("/compute/fibonacci/{n}")
     public Object fibonacci(@PathVariable int n) {
         long start = System.currentTimeMillis();
         long result = fib(Math.min(n, 45));
-        return m("result", , "result", , "n", , "n", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("result", result, "n", n, "elapsed_ms", System.currentTimeMillis() - start);
     }
 
     private long fib(int n) {
@@ -99,15 +78,11 @@ public class StressController {
         return fib(n - 1) + fib(n - 2);
     }
 
-    /**
-     * GET /api/compute/prime/{n}
-     * CPU 密集 — 查找第 n 个素数
-     */
     @GetMapping("/compute/prime/{n}")
     public Object prime(@PathVariable int n) {
         long start = System.currentTimeMillis();
         long result = findNthPrime(Math.min(n, 100000));
-        return m("result", , "result", , "n", , "n", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("result", result, "n", n, "elapsed_ms", System.currentTimeMillis() - start);
     }
 
     private long findNthPrime(int n) {
@@ -128,29 +103,17 @@ public class StressController {
         return true;
     }
 
-    // ==================== 慢响应 / 延迟场景 ====================
-
-    /**
-     * GET /api/slow?delay=1000
-     * 可控延迟 — Thread.sleep 模拟慢接口
-     */
     @GetMapping("/slow")
     public Object slow(@RequestParam(defaultValue = "1000") long delayMs) {
         long start = System.currentTimeMillis();
         try {
-            Thread.sleep(Math.min(delayMs, 30000)); // 上限 30s
+            Thread.sleep(Math.min(delayMs, 30000));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        return m("delayed_ms", , "delayMs", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("delayed_ms", delayMs, "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    // ==================== 内存泄漏场景 ====================
-
-    /**
-     * GET /api/memory/leak?mb=10
-     * 内存泄漏模拟 — 持续占用堆内存 (单位 MB)
-     */
     @GetMapping("/memory/leak")
     public Object leakMemory(@RequestParam(defaultValue = "10") int mb) {
         long start = System.currentTimeMillis();
@@ -159,26 +122,19 @@ public class StressController {
         MEMORY_LEAK.add(leaked);
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heap = memoryBean.getHeapMemoryUsage();
-        return m("leaked_mb", , "mb", , "total_leaked_objects", , "MEMORY_LEAK.size()", , "heap_used_mb", , "heap.getUsed() / 1024 / 1024", , "heap_max_mb", , "heap.getMax() / 1024 / 1024", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("leaked_mb", mb, "total_leaked_objects", MEMORY_LEAK.size(),
+                "heap_used_mb", heap.getUsed() / 1024 / 1024,
+                "heap_max_mb", heap.getMax() / 1024 / 1024,
+                "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    /**
-     * POST /api/memory/clear
-     * 清空泄漏内存 — 恢复用
-     */
     @PostMapping("/memory/clear")
     public Object clearLeak() {
         MEMORY_LEAK.clear();
         System.gc();
-        return m("cleared", , "true", , "remaining", , "MEMORY_LEAK.size()", );
+        return m("cleared", true, "remaining", MEMORY_LEAK.size());
     }
 
-    // ==================== 缓存场景 ====================
-
-    /**
-     * GET /api/cache/{key}
-     * 缓存命中/未命中模拟
-     */
     @GetMapping("/cache/{key}")
     public Object cache(@PathVariable String key) {
         long start = System.currentTimeMillis();
@@ -186,28 +142,23 @@ public class StressController {
         if (!hit) {
             CACHE.put(key, "value-" + UUID.randomUUID());
         }
-        return m("key", , "key", , "hit", , "hit", , "cache_size", , "CACHE.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
+        return m("key", key, "hit", hit, "cache_size", CACHE.size(),
+                "elapsed_ms", System.currentTimeMillis() - start);
     }
 
-    // ==================== 系统状态 ====================
-
-    /**
-     * GET /api/stats
-     * 当前系统状态 — 给压测报告做对比
-     */
     @GetMapping("/stats")
     public Object stats() {
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heap = memoryBean.getHeapMemoryUsage();
-        return m("heap_used_mb", , "heap.getUsed() / 1024 / 1024", , "heap_max_mb", , "heap.getMax() / 1024 / 1024", , "heap_usage_percent", , "Math.round((double) heap.getUsed() / heap.getMax() * 100)", , "active_threads", , "Thread.activeCount()", , "db_url", , "dbUrl", , "leaked_objects", , "MEMORY_LEAK.size()", , "cache_entries", , "CACHE.size()", , "timestamp", , "LocalDateTime.now()", );
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("heap_used_mb", heap.getUsed() / 1024 / 1024);
+        result.put("heap_max_mb", heap.getMax() / 1024 / 1024);
+        result.put("heap_usage_percent", Math.round((double) heap.getUsed() / heap.getMax() * 100));
+        result.put("active_threads", Thread.activeCount());
+        result.put("db_url", dbUrl);
+        result.put("leaked_objects", MEMORY_LEAK.size());
+        result.put("cache_entries", CACHE.size());
+        result.put("timestamp", LocalDateTime.now());
+        return result;
     }
-
-    private static Map<String, Object> m(Object... kvs) {
-        Map<String, Object> map = new HashMap<>();
-        for (int i = 0; i < kvs.length; i += 2) {
-            map.put((String) kvs[i], kvs[i + 1]);
-        }
-        return map;
-    }
-
 }
