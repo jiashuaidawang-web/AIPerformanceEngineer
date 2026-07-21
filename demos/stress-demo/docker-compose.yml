@@ -1,0 +1,36 @@
+# ============================================================
+# StressDemo — Docker Compose (直连云服务器 MySQL)
+# ============================================================
+version: "3.8"
+
+services:
+  stress-demo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stress-demo
+    environment:
+      SERVER_PORT: 8090
+      TZ: Asia/Shanghai
+      # =====================================================
+      # TODO: 修改为你的云服务器 MySQL 内网 IP
+      # =====================================================
+      DB_HOST: ${MYSQL_HOST:-124.223.220.245}
+      DB_PORT: ${MYSQL_PORT:-3306}
+      DB_USER: ${MYSQL_USER:-root}
+      DB_PASSWORD: ${MYSQL_PASSWORD:-astock_root}
+      DB_POOL_SIZE: 20
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8090/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+      start_period: 60s

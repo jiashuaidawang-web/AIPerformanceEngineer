@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  application:
+    name: stress-demo
+  datasource:
+    mysql:
+      jdbc-url: jdbc:mysql://${DB_HOST:124.223.220.245}:${DB_PORT:3306}/stress_demo?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: ${DB_USER:root}
+      password: ${DB_PASSWORD:astock_root}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        maximum-pool-size: ${DB_POOL_SIZE:20}
+        minimum-idle: 5
+  cache:
+    type: simple
+
+# Actuator — 用于容器健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# 日志
+logging:
+  level:
+    com.stress.demo: INFO
+    org.springframework.web: WARN
