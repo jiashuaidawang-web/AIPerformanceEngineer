@@ -45,6 +45,8 @@
         <module>aipe-config-manager</module>
         <module>aipe-resource</module>
         <module>aipe-relationship</module>
+        <module>aipe-timeline</module>
+        <module>aipe-evidence</module>
         <module>aipe-backend</module>
     </modules>
 

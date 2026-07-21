@@ -1,0 +1,18 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: aipe-timeline
+  datasource:
+    clickhouse:
+      jdbc-url: jdbc:clickhouse://124.223.220.245:8123/metric_observation?compress=0
+      driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+      username: default
+      password: pamirs@123
+
+# 日志
+logging:
+  level:
+    com.aipe.timeline: DEBUG
+    com.aipe.timeline.infrastructure: DEBUG
