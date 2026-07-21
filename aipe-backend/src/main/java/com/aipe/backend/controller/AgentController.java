@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +32,10 @@ public class AgentController {
     public Map<String, String> register(@RequestBody AgentInfo agentInfo) {
         String agentId = agentService.registerAgent(agentInfo);
         log.info("Agent registered: {}", agentId);
-        return Map.of("agentId", agentId, "status", "ok");
+        Map<String, String> result = new HashMap<>();
+        result.put("agentId", agentId);
+        result.put("status", "ok");
+        return result;
     }
 
     /**
@@ -41,7 +45,9 @@ public class AgentController {
     @PostMapping("/{agentId}/heartbeat")
     public Map<String, String> heartbeat(@PathVariable String agentId) {
         agentService.updateHeartbeat(agentId);
-        return Map.of("status", "ok");
+        Map<String, String> result = new HashMap<>();
+        result.put("status", "ok");
+        return result;
     }
 
     /**

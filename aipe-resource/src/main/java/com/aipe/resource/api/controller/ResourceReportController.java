@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -54,10 +56,10 @@ public class ResourceReportController {
                 report.getPort(),
                 report.getLabels()
         );
-        return ApiResponse.success(Map.of(
-                "resourceId", resource.getId().getValue(),
-                "status", "ok"
-        ));
+        Map<String, String> data = new HashMap<>();
+        data.put("resourceId", resource.getId().getValue());
+        data.put("status", "ok");
+        return ApiResponse.success(data);
     }
 
     /**
@@ -67,9 +69,9 @@ public class ResourceReportController {
     @PostMapping("/batch")
     public ApiResponse<Map<String, Object>> discoverBatch(@RequestBody List<Map<String, String>> reports) {
         int count = discoveryService.batchHandleResourceReport(reports);
-        return ApiResponse.success(Map.of(
-                "processed", count,
-                "total", reports != null ? reports.size() : 0
-        ));
+        Map<String, Object> data = new HashMap<>();
+        data.put("processed", count);
+        data.put("total", reports != null ? reports.size() : 0);
+        return ApiResponse.success(data);
     }
 }
