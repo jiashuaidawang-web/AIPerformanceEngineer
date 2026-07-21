@@ -44,8 +44,7 @@ public class StressController {
                                @RequestParam(defaultValue = "100") int size) {
         long start = System.currentTimeMillis();
         List<Product> products = productService.findAll(page, Math.min(size, 500));
-        return Map.of("data", products, "page", page, "size", products.size(),
-                "elapsed_ms", System.currentTimeMillis() - start);
+        return m("data", , "products", , "page", , "page", , "size", , "products.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     /**
@@ -56,7 +55,7 @@ public class StressController {
     public Object getProduct(@PathVariable Long id) {
         long start = System.currentTimeMillis();
         Product p = productService.findById(id);
-        return Map.of("data", p, "elapsed_ms", System.currentTimeMillis() - start);
+        return m("data", , "p", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     /**
@@ -67,8 +66,7 @@ public class StressController {
     public Object search(@RequestParam(defaultValue = "a") String keyword) {
         long start = System.currentTimeMillis();
         List<Product> results = productService.search(keyword);
-        return Map.of("data", results, "keyword", keyword, "hits", results.size(),
-                "elapsed_ms", System.currentTimeMillis() - start);
+        return m("data", , "results", , "keyword", , "keyword", , "hits", , "results.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     /**
@@ -80,7 +78,7 @@ public class StressController {
         long start = System.currentTimeMillis();
         if (product.getCreatedAt() == null) product.setCreatedAt(LocalDateTime.now());
         Product saved = productService.create(product);
-        return Map.of("data", saved, "elapsed_ms", System.currentTimeMillis() - start);
+        return m("data", , "saved", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     // ==================== CPU 密集场景 ====================
@@ -93,7 +91,7 @@ public class StressController {
     public Object fibonacci(@PathVariable int n) {
         long start = System.currentTimeMillis();
         long result = fib(Math.min(n, 45));
-        return Map.of("result", result, "n", n, "elapsed_ms", System.currentTimeMillis() - start);
+        return m("result", , "result", , "n", , "n", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     private long fib(int n) {
@@ -109,7 +107,7 @@ public class StressController {
     public Object prime(@PathVariable int n) {
         long start = System.currentTimeMillis();
         long result = findNthPrime(Math.min(n, 100000));
-        return Map.of("result", result, "n", n, "elapsed_ms", System.currentTimeMillis() - start);
+        return m("result", , "result", , "n", , "n", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     private long findNthPrime(int n) {
@@ -144,7 +142,7 @@ public class StressController {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        return Map.of("delayed_ms", delayMs, "elapsed_ms", System.currentTimeMillis() - start);
+        return m("delayed_ms", , "delayMs", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     // ==================== 内存泄漏场景 ====================
@@ -161,10 +159,7 @@ public class StressController {
         MEMORY_LEAK.add(leaked);
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heap = memoryBean.getHeapMemoryUsage();
-        return Map.of("leaked_mb", mb, "total_leaked_objects", MEMORY_LEAK.size(),
-                "heap_used_mb", heap.getUsed() / 1024 / 1024,
-                "heap_max_mb", heap.getMax() / 1024 / 1024,
-                "elapsed_ms", System.currentTimeMillis() - start);
+        return m("leaked_mb", , "mb", , "total_leaked_objects", , "MEMORY_LEAK.size()", , "heap_used_mb", , "heap.getUsed() / 1024 / 1024", , "heap_max_mb", , "heap.getMax() / 1024 / 1024", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     /**
@@ -175,7 +170,7 @@ public class StressController {
     public Object clearLeak() {
         MEMORY_LEAK.clear();
         System.gc();
-        return Map.of("cleared", true, "remaining", MEMORY_LEAK.size());
+        return m("cleared", , "true", , "remaining", , "MEMORY_LEAK.size()", );
     }
 
     // ==================== 缓存场景 ====================
@@ -191,8 +186,7 @@ public class StressController {
         if (!hit) {
             CACHE.put(key, "value-" + UUID.randomUUID());
         }
-        return Map.of("key", key, "hit", hit, "cache_size", CACHE.size(),
-                "elapsed_ms", System.currentTimeMillis() - start);
+        return m("key", , "key", , "hit", , "hit", , "cache_size", , "CACHE.size()", , "elapsed_ms", , "System.currentTimeMillis() - start", );
     }
 
     // ==================== 系统状态 ====================
@@ -205,15 +199,15 @@ public class StressController {
     public Object stats() {
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heap = memoryBean.getHeapMemoryUsage();
-        return Map.of(
-                "heap_used_mb", heap.getUsed() / 1024 / 1024,
-                "heap_max_mb", heap.getMax() / 1024 / 1024,
-                "heap_usage_percent", Math.round((double) heap.getUsed() / heap.getMax() * 100),
-                "active_threads", Thread.activeCount(),
-                "db_url", dbUrl,
-                "leaked_objects", MEMORY_LEAK.size(),
-                "cache_entries", CACHE.size(),
-                "timestamp", LocalDateTime.now()
-        );
+        return m("heap_used_mb", , "heap.getUsed() / 1024 / 1024", , "heap_max_mb", , "heap.getMax() / 1024 / 1024", , "heap_usage_percent", , "Math.round((double) heap.getUsed() / heap.getMax() * 100)", , "active_threads", , "Thread.activeCount()", , "db_url", , "dbUrl", , "leaked_objects", , "MEMORY_LEAK.size()", , "cache_entries", , "CACHE.size()", , "timestamp", , "LocalDateTime.now()", );
     }
+
+    private static Map<String, Object> m(Object... kvs) {
+        Map<String, Object> map = new HashMap<>();
+        for (int i = 0; i < kvs.length; i += 2) {
+            map.put((String) kvs[i], kvs[i + 1]);
+        }
+        return map;
+    }
+
 }
