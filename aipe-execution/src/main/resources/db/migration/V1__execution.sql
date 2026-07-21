@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS execution (
+    pk_id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id                  VARCHAR(64) NOT NULL,
+    recommendation_id   VARCHAR(64) NOT NULL,
+    executor            VARCHAR(64) NOT NULL,
+    execution_type      VARCHAR(16) NOT NULL DEFAULT 'MANUAL',
+    status              VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    before_snapshot     JSON,
+    after_snapshot      JSON,
+    improvement_score   DOUBLE NOT NULL DEFAULT 0.0,
+    started_at          TIMESTAMP NULL,
+    finished_at         TIMESTAMP NULL,
+    rollback_info       JSON,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    version             INT NOT NULL DEFAULT 1,
+    INDEX idx_execution_id (id),
+    INDEX idx_recommendation (recommendation_id),
+    INDEX idx_status (status),
+    UNIQUE uk_execution_version (id, version)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

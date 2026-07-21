@@ -1,0 +1,32 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: aipe-evidence
+  datasource:
+    mysql:
+      url: jdbc:mysql://124.223.220.245:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: root
+      password: astock_root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    clickhouse:
+      jdbc-url: jdbc:clickhouse://124.223.220.245:8123/metric_observation?compress=0&async_insert=0&wait_for_async_insert=0
+      driver-class-name: com.clickhouse.jdbc.ClickHouseDriver
+      username: default
+      password: pamirs@123
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.aipe.evidence.infrastructure
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_UUID
+      logic-delete-field: deleted
+
+logging:
+  level:
+    com.aipe.evidence: DEBUG

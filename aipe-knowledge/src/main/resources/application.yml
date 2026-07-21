@@ -1,0 +1,26 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: aipe-knowledge
+  datasource:
+    mysql:
+      url: jdbc:mysql://124.223.220.245:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: root
+      password: astock_root
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.aipe.knowledge.infrastructure
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_UUID
+
+logging:
+  level:
+    com.aipe.knowledge: DEBUG
