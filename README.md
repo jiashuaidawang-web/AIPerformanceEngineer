@@ -10,256 +10,163 @@
 
 - [产品概览](#产品概览)
 - [核心价值](#核心价值)
-- [适用企业](#适用企业)
-- [已完成能力](#已完成能力)
 - [系统架构](#系统架构)
+- [M2 已完成模块](#m2-已完成模块)
 - [快速开始](#快速开始)
-- [接入指南](#接入指南)
-- [配置说明](#配置说明)
-- [API 参考](#api-参考)
+- [存储架构](#存储架构)
+- [工程法则](#工程法则)
 - [开发路线图](#开发路线图)
-- [贡献指南](#贡献指南)
 
 ---
 
 ## 产品概览
 
-### 一句话定位
+### 目标客户
 
-AI Performance Engineer 是面向企业的 **AI Native 性能工程平台**，能够自动理解企业的 IT 世界、推理性能瓶颈、沉淀优化知识，并持续自我成长。
-
-### 解决什么问题
-
-| 传统方式 | AI Performance Engineer |
-|---------|------------------------|
-| 性能问题发现慢（靠人肉排查） | **自动发现**：AI 沿 Timeline 自动识别异常 |
-| 根因定位难（依赖专家经验） | **自动推理**：Evidence → Knowledge 链路定位根因 |
-| 优化效果不确定（缺乏闭环验证） | **闭环验证**：Execution → New Observation 持续验证 |
-| 知识随人员流失而丢失 | **知识沉淀**：Knowledge 持续积累、不断演化 |
-| 压测编排复杂（人工配置） | **统一编排**：Scenario 编排整个压测/优化流程 |
-
-### 工作方式
-
-```
-企业 IT 资源（Resource）
-    │
-    ▼
-Agent 采集运行事实（Observation）──→ ClickHouse（Fact Store）
-                                        │
-                                        ▼
-                              AI Runtime 推理流水线
-                              Timeline → Evidence → Knowledge
-                                        │
-                                        ▼
-                              Recommendation → Execution → Optimization
-                                        │
-                                        ▼
-                                   New Observation（闭环成长）
-```
-
----
-
-## 核心价值
-
-### 1. 自动发现瓶颈
-AI 沿 Timeline 自动分析运行事实，识别异常模式，无需人工盯盘。
-
-### 2. 智能根因定位
-Evidence Engine 基于时间线和拓扑关系推理"为什么"，Knowledge 层持续沉淀经验。
-
-### 3. 闭环优化验证
-Recommendation → Execution → New Observation 验证优化效果，形成闭环。
-
-### 4. 知识持续成长
-Knowledge 是"已验证的 Evidence"，随使用不断演化（Evolution），而非覆盖（Overwrite）。
-
-### 5. 统一资源视图
-所有 IT 对象统一抽象为 Resource（业务域维度），摒弃传统机器视角。
-
-### 6. 可解释、可审计
-AI 所有输出必须 Explainable（回答"为什么"、"依据什么"），支持 Replay / Trace / Audit。
-
----
-
-## 适用企业
-
-### 适用场景
-
-| 场景 | 说明 |
+| 维度 | 说明 |
 |------|------|
-| **全链路压测** | 自动编排压测、采集指标、分析瓶颈 |
-| **容量规划** | 基于历史趋势预测资源需求 |
-| **根因定位** | 故障时快速定位根因，缩短 MTTR |
-| **性能优化** | 持续发现优化空间，闭环验证效果 |
-| **故障预测** | 趋势分析，提前发现潜在风险 |
+| **谁** | 有 IT 系统的企业（互联网/电商/金融/政企/SaaS）|
+| **痛点** | 性能问题发现慢、根因定位难、优化效果不确定、压测编排复杂 |
+| **买单决策者** | CTO / 技术总监 / SRE 负责人 |
 
-### 适用的企业类型
+### 核心价值主张
 
-| 企业类型 | 适配度 | 说明 |
-|---------|--------|------|
-| **互联网 / SaaS** | ⭐⭐⭐⭐⭐ | 微服务、容器化架构天然适配 |
-| **电商** | ⭐⭐⭐⭐⭐ | 大促压测、全链路瓶颈定位核心场景 |
-| **金融科技** | ⭐⭐⭐⭐ | 性能合规 + 稳定性保障（需补充安全能力）|
-| **政企 / 信创** | ⭐⭐⭐⭐ | 国产化环境（需适配信创 CPU/OS/数据库）|
-| **传统企业** | ⭐⭐⭐ | legacy 系统需要定制 Connector |
+> **用 AI 替代人肉排查，自动发现瓶颈、定位根因、沉淀知识、闭环验证。**
 
-### 技术栈要求
-
-企业只需具备以下环境：
-
-| 组件 | 最低要求 | 说明 |
-|------|---------|------|
-| **MySQL** | 5.7+ / 8.0 | 元数据 / Resource / Knowledge 存储 |
-| **ClickHouse** | 21+ | 时序指标 Fact Store |
-| **Java** | 1.8+ | 后端运行环境 |
-| **网络** | Agent → Backend 可达 | 采集器到服务的网络连通 |
-| **操作系统** | Linux / macOS / Windows | JVM 跨平台 |
-
-可选组件：
-
-| 组件 | 说明 |
-|------|------|
-| **Redis** | 缓存 / AI Memory |
-| **Neo4j** | 拓扑 / 关系（高级功能）|
-| **Kubernetes** | 容器编排环境 |
-| **Prometheus** | 已有监控系统数据接入 |
-| **OpenTelemetry** | 已有链路追踪数据接入 |
-
----
-
-## 已完成能力
-
-### ✅ Phase 1: Agent + 数据采集（M1，已完成）
-
-| 能力 | 状态 | 说明 |
-|------|------|------|
-| Agent Bootstrap | ✅ | Agent 生命周期、心跳、配置热更新 |
-| Connector SDK | ✅ | 统一 SPI（init/collect/start/stop/destroy）|
-| JVM Connector | ✅ | JMX 采集 Heap/Thread/GC/CPU |
-| Linux Connector | ✅ | /proc 采集 CPU/Memory/Disk/Network |
-| Redis Connector | ✅ | INFO 采集 Memory/Clients/Stats |
-| MySQL Connector | ✅ | SHOW STATUS 采集 QPS/慢查询/连接数 |
-| Observation Pipeline | ✅ | Agent → HTTP → Backend → ClickHouse |
-| Storage Layer | ✅ | MySQL（元数据）+ ClickHouse（时序）|
-| Scenario 管理 | ✅ | 压测场景编排入口 |
-
-### ✅ Phase 2: Resource Domain（M2-WP011，已完成）
-
-| 能力 | 状态 | 说明 |
-|------|------|------|
-| 统一 Resource 抽象 | ✅ | 所有 IT 对象统一为 Resource（业务域维度）|
-| DDD 领域模型 | ✅ | Resource 聚合根 + 值对象 + 业务方法 |
-| Resource 生命周期 | ✅ | 创建/更新/删除/状态流转（乐观锁）|
-| Resource 发现 | ✅ | Connector/Agent 上报 → 幂等创建/更新 |
-| 业务归属管理 | ✅ | businessSystem 必填（Law-001 禁止游离资源）|
-| 父子关系绑定 | ✅ | parent_resource_id 支持层级结构 |
-| 乐观锁 | ✅ | @Version 并发安全 |
-| REST API | ✅ | CRUD + 查询 + 状态流转 + 资源上报 |
-| 全局异常处理 | ✅ | 400/409/500 统一响应 |
-
-### 🔲 Phase 3: AI Runtime（M2，待建设）
-
-| 能力 | 状态 | 说明 |
-|------|------|------|
-| Observation Engine | 🔲 | WP012: Observation 领域模型 |
-| Timeline Builder | 🔲 | WP014: 动态构建 Resource Timeline |
-| Evidence Engine | 🔲 | WP015: 发现异常、形成 Evidence |
-| Knowledge Engine | 🔲 | WP016: 形成/验证 Knowledge |
-| Recommendation Engine | 🔲 | WP017: 生成优化建议 |
-| Execution + Optimization | 🔲 | WP018: 执行优化、闭环验证 |
-
-### 🔲 Phase 4: 企业能力（待建设）
-
-| 能力 | 状态 | 说明 |
-|------|------|------|
-| 认证授权（RBAC）| 🔲 | 用户/角色/权限 |
-| 多租户隔离 | 🔲 | 企业数据隔离 |
-| 审计日志 | 🔲 | 操作可追溯 |
-| 企业集成 | 🔲 | CMDB/Jenkins/K8s Adapter |
-| 部署运维工具 | 🔲 | 一键安装/升级/监控 |
+| 企业痛点 | 我们的价值 | 对应能力 |
+|---------|-----------|---------|
+| 性能问题发现慢 | 自动发现瓶颈（AI 推理）| Evidence Engine + Timeline |
+| 根因定位难 | 定位根因（Timeline + Evidence）| Evidence Engine + Knowledge |
+| 优化效果不确定 | 沉淀知识（Knowledge 持续成长）| Knowledge Engine + Optimization |
+| 压测编排复杂 | 闭环验证（Execution → New Observation）| Execution Engine |
 
 ---
 
 ## 系统架构
 
-### 逻辑架构（DDD 分层）
+### AI World Evolution Chain（核心主线）
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Presentation Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Resource API │  │ Agent API    │  │ Observation API      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                      Application Layer                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Lifecycle    │  │ Discovery    │  │ Workflow             │  │
-│  │ Manager      │  │ Service      │  │ Orchestrator         │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                        Domain Layer                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────┐ │
-│  │ Resource │ │Observatn │ │Relation- │ │Timeline  │ │Evidnc│ │
-│  │          │ │          │ │ship      │ │          │ │      │ │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────┘ │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
-│  │Knowledge │ │Recommend │ │Execution │ │ Optimization     │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                     Infrastructure Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ Repository   │  │ AI Runtime   │  │ Connector SDK        │  │
-│  │ Impl         │  │              │  │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                       Storage Layer                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ MySQL        │  │ ClickHouse   │  │ Neo4j (可选)         │  │
-│  │ (元数据)     │  │ (时序)       │  │ (拓扑)               │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-├─────────────────────────────────────────────────────────────────┤
-│                      Connector Layer                             │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌───────┐ ┌─────────────┐│
-│  │ JVM  │ │Linux │ │Redis │ │MySQL │ │Prometh│ │ OTel        ││
-│  └──────┘ └──────┘ └──────┘ └──────┘ └───────┘ └─────────────┘│
-└─────────────────────────────────────────────────────────────────┘
+Reality（真实世界）—— 企业 IT 系统运行产生的海量事实
+    │
+    ▼
+Resource（世界中的对象）—— 所有 IT 对象统一抽象为 Resource
+    │   物理机 / 应用 / 服务 / 中间件 / 数据库 / 集群 / JVM / ...
+    ▼
+Observation（对象产生事实）—— 某时刻产生的一条不可变运行事实
+    │   Type: METRIC / LOG / TRACE / EVENT / SNAPSHOT
+    │   Storage: ClickHouse observation_fact（MergeTree, TTL 365天）
+    ▼
+Timeline（事实形成历史）—— Resource 在时间维度上的完整运行轨迹
+    │   运行时计算, 不存储（Persistence Law-004）
+    │   含统计特征: min/max/avg/stdDev + 趋势方向
+    ▼
+Evidence（AI 解释历史）—— 多个 Observation 关联分析形成的可解释证据链
+    │   Confidence 0~100 + ReasoningSteps
+    │   Storage: MySQL evidence 表
+    ▼
+Knowledge（验证后的经验）—— Verified Evidence 沉淀的复用知识
+    │   Type: BOTTLENECK/DEPENDENCY/DEPLOYMENT/BUSINESS/OPTIMIZATION/AI
+    │   版本管理（升级 = 新版本新记录）
+    │   Storage: MySQL knowledge 表（pk_id 自增）
+    ▼
+Recommendation（知识指导决策）—— Knowledge 应用于具体 Resource 的建议
+    │   Priority: HIGH/MEDIUM/LOW + ExecutionPlan + RollbackPlan
+    │   Status: PENDING → APPROVED → EXECUTED / REJECTED
+    │   Storage: MySQL recommendation 表
+    ▼
+Execution（执行优化）—— 执行 Recommendation 并验证效果
+    │   beforeSnapshot / afterSnapshot JSON + improvementScore 0~100
+    │   Status: PENDING → EXECUTING → SUCCESS/FAILED → ROLLED_BACK
+    │   Storage: MySQL execution 表
+    ▼
+New Observation → 闭环 ♻️
 ```
 
-### 数据流
+### 模块关系图
 
 ```
-Agent/Connector → Observation (Fact)
-                    │
-                    ▼
-        ClickHouse（Fact Store）
-                    │
-                    ▼
-        Timeline Builder（按 Resource + 时间聚合）
-                    │
-                    ▼
-        Evidence Engine（异常检测 + 根因推理）
-                    │
-                    ▼
-        Knowledge Engine（已验证 Evidence → Knowledge）
-                    │
-                    ▼
-        Recommendation Engine（生成优化建议）
-                    │
-                    ▼
-        Execution Planner（执行优化）
-                    │
-                    ▼
-        New Observation（验证效果，闭环）
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     AI Performance Engineer                              │
+│                 B端全链路自动压测 + AI 推理平台                           │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+          ┌─────────────────────────┼─────────────────────────┐
+          │                         │                         │
+ ┌────────▼────────┐       ┌────────▼────────┐       ┌────────▼────────┐
+ │  Connector       │       │  AI Domain      │       │  存储层          │
+ │  Runtime (M1)    │       │  Foundation     │       │                 │
+ │                  │       │  (M2)           │       │  MySQL 8.0.33   │
+ │  aipe-agent      │       │                 │       │  ClickHouse 23.8│
+ │  aipe-connectors │       │  ┌─ resource ──┐│       │                 │
+ │  aipe-storage    │       │  │observation  ││       │  Docker Compose  │
+ └────────────────┘       │  │relationship ││       │  124.223.220.245│
+                           │  │timeline     ││       └─────────────────┘
+                           │  │evidence     ││
+                           │  │knowledge    ││
+                           │  │recommend    ││
+                           │  │execution    ││
+                           │  └─────────────┘│
+                           └─────────────────┘
 ```
 
-### 存储分工
+### 8 大 Domain Engine 模块
 
-| 存储 | 职责 | 对齐原则 |
-|------|------|---------|
-| **MySQL** | Resource / Knowledge / Execution / Configuration | 业务元数据、已验证知识 |
-| **ClickHouse** | Observation / Timeline Facts / Raw Metrics | 时序事实（只存 Reality）|
-| **Neo4j** | Relationship / Topology | 空间关系（可选）|
-| **Redis** | Cache / AI Memory | 性能加速 |
+| WP | 模块 | 端口 | 核心 Domain 对象 | 存储 | 依赖 |
+|----|------|------|-----------------|------|------|
+| WP011 | aipe-resource | 8082 | Resource (聚合根) | MySQL resource | — |
+| WP012 | aipe-observation | 8083 | Observation (不可变, 5 类) | ClickHouse observation_fact | resource (String ref) |
+| WP013 | aipe-relationship | 8084 | Relationship (独立ID/置信度) | MySQL relationship | resource (JdbcLookupPort) |
+| WP014 | aipe-timeline | 8085 | Timeline (运行时, 不存储) | 无 (计算生成) | observation (ObservationQueryPort) |
+| WP015 | aipe-evidence | 8086 | Evidence (推理链) | MySQL evidence | observation (ObservationQueryPort) |
+| WP016 | aipe-knowledge | 8087 | Knowledge (版本管理) | MySQL knowledge | evidence (String ref) |
+| WP017 | aipe-recommendation | 8088 | Recommendation (状态机) | MySQL recommendation | knowledge (String ref) |
+| WP018 | aipe-execution | 8089 | Execution (快照对比) | MySQL execution | recommendation (String ref) |
+
+---
+
+## M2 已完成模块
+
+### DDD 分层（每模块统一）
+
+```
+com.aipe.{domain}
+├── domain/                ← 纯 POJO（禁止 Spring/MyBatis 注解）
+│   ├── Xxx.java           ← 聚合根（validate / belongsTo / upgrade ...）
+│   ├── XxxId.java         ← 值对象（final + 不可变）
+│   ├── XxxType/Status     ← 枚举
+│   ├── XxxRepository.java ← 接口（返回 Domain, Never PO）
+│   ├── XxxBuilder.java    ← 工厂
+│   └── XxxSpecification.java ← 校验规格
+├── application/           ← 事务编排（唯一事务 Owner）
+│   ├── XxxApplicationService.java
+│   └── XxxCalculator/Producer.java
+├── infrastructure/        ← 持久化
+│   ├── XxxRepositoryImpl.java
+│   ├── XxxPO.java         ← @TableName + @TableField
+│   ├── XxxMapper.java     ← MyBatis Plus
+│   ├── XxxConverter.java  ← PO↔Domain
+│   └── XxxDataSourceConfig / XxxSchemaInitializer
+└── api/                   ← REST
+    ├── XxxController.java
+    ├── XxxDtoMapper.java
+    ├── dto/XxxRequest/Response.java
+    └── exception/XxxExceptionHandler.java
+```
+
+### 工程法则落地
+
+| 法则 | 实现方式 |
+|------|---------|
+| Law-001 Everything Is Resource | 所有 IT 对象统一抽象为 `Resource` |
+| Law-002 Observation Belongs to Resource | `resourceId` 强必填 |
+| Persistence Law-001 Right Data, Right Storage | Resource→MySQL, Observation→ClickHouse |
+| Persistence Law-002 ClickHouse Stores Facts | Evidence/Knowledge/Recommendation 禁止落 CH |
+| Persistence Law-004 Timeline Is Computed | Timeline 永不存储，运行时由 Observation 构建 |
+| Architecture Law-004 Topology Is A View | Topology 实时投影，不建表 |
+| Architecture Law-005 Relationship First-Class | Relationship 有独立 ID/类型/置信度 |
+| Gateway Law-001 Repository Returns Domain | 所有 Repository 禁止返回 PO |
+| AI Principle-001 Evidence Before Conclusion | 必须先生成 Evidence 才能给 Recommendation |
 
 ---
 
@@ -267,345 +174,130 @@ Agent/Connector → Observation (Fact)
 
 ### 前置条件
 
-- JDK 1.8+
-- Maven 3.9+
-- MySQL 5.7+ / 8.0
-- ClickHouse 21+
+- JDK 1.8
+- Maven 3.6+
+- Docker & Docker Compose（用于启动 MySQL + ClickHouse）
 
-### 方式一：Docker Compose（推荐）
+### 启动依赖
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/jiashuaidawang-web/AIPerformanceEngineer.git
-cd AIPerformanceEngineer
-
-# 2. 启动 MySQL + ClickHouse
 docker-compose up -d
-
-# 3. 构建项目
-mvn clean install -DskipTests
-
-# 4. 启动 Backend
-java -jar aipe-backend/target/aipe-backend-1.0.0-SNAPSHOT.jar &
-
-# 5. 启动 Resource 模块
-java -jar aipe-resource/target/aipe-resource-1.0.0-SNAPSHOT.jar &
-
-# 6. 启动 Agent（采集端）
-java -jar aipe-agent/target/aipe-agent-1.0.0-SNAPSHOT.jar &
+# MySQL :3306  (aipe_metadata / root / root)
+# ClickHouse :8123 :9000  (metric_observation / default / pamirs@123)
 ```
 
-或使用一键脚本：
+### 构建 & 测试
 
 ```bash
-./start.sh          # 启动 backend + config + agent
+mvn clean install        # 构建全部 8 个模块
+mvn test                 # 运行 55 个真实 DB/CH 集成测试（全绿）
 ```
 
-### 方式二：本地部署
+### 启动任一模块
 
 ```bash
-# 1. 配置数据库（修改 application.yml 中的连接信息）
-# MySQL: localhost:3306/aipe_metadata
-# ClickHouse: localhost:8123/metric_observation
+# 方式 1: Maven
+mvn -pl aipe-execution -am spring-boot:run
 
-# 2. 构建
-mvn clean install -DskipTests
-
-# 3. 启动（分别启动各模块）
-java -jar aipe-backend/target/aipe-backend-1.0.0-SNAPSHOT.jar
-java -jar aipe-resource/target/aipe-resource-1.0.0-SNAPSHOT.jar
-java -jar aipe-agent/target/aipe-agent-1.0.0-SNAPSHOT.jar
+# 方式 2: Jar
+java -jar aipe-execution/target/aipe-execution-1.0.0-SNAPSHOT.jar
 ```
 
-### 验证启动
-
-```bash
-# Backend 健康检查（默认 8081 端口）
-curl http://localhost:8081/api/v1/agents
-
-# Resource 模块（默认 8082 端口）
-curl http://localhost:8082/api/v1/resources
-```
+端口分配：resource=8082, observation=8083, relationship=8084, timeline=8085, evidence=8086, knowledge=8087, recommendation=8088, execution=8089。
 
 ---
 
-## 接入指南
+## 存储架构
 
-### 1. 接入数据源（Connector）
+### MySQL `aipe_metadata`（元数据 / 知识 / 执行）
 
-AI Performance Engineer 通过 Connector 采集数据。内置 Connector：
+| 表 | 主键 | 用途 |
+|----|------|------|
+| resource | resource_id VARCHAR(64) PK | IT 对象统一抽象 |
+| relationship | id VARCHAR(64) PK | Resource 间关系（有向/置信度/来源）|
+| evidence | id VARCHAR(64) PK | 可解释证据链 |
+| knowledge | pk_id BIGINT AUTO + id+version UK | 版本化知识（升级 = 新记录）|
+| recommendation | id VARCHAR(64) PK | 优化建议（状态机）|
+| execution | pk_id BIGINT AUTO + id+version UK | 执行记录（快照对比）|
 
-| Connector | 数据源 | 采集内容 | 状态 |
-|-----------|--------|---------|------|
-| JVM Connector | Java 应用 | Heap / Thread / GC / CPU（JMX）| ✅ |
-| Linux Connector | 主机 | CPU / Memory / Disk/ Network（/proc）| ✅ |
-| Redis Connector | Redis | Memory / Clients / Stats（INFO）| ✅ |
-| MySQL Connector | MySQL | QPS / 慢查询 / 连接数（SHOW STATUS）| ✅ |
-| Prometheus Connector | Prometheus | 通用 Pull 指标 | 🔲 |
-| OTel Connector | OpenTelemetry | Trace / Metric | 🔲 |
+### ClickHouse `metric_observation`（事实 / 时序）
 
-### 2. 自定义 Connector
-
-实现 `Connector` 接口即可接入新数据源：
-
-```java
-public class MyConnector implements Connector {
-    @Override
-    public String getConnectorType() { return "MY_DB"; }
-
-    @Override
-    public List<ObservationData> collect() {
-        // 实现采集逻辑
-        return observations;
-    }
-    // ... 其他方法
-}
-```
-
-### 3. 上报资源（Resource Discovery）
-
-采集到的资源信息通过 REST API 上报：
-
-```bash
-# 单条上报
-curl -X POST http://localhost:8082/api/v1/resources/discover \
-  -H "Content-Type: application/json" \
-  -d '{
-    "resourceId": "order-service-001",
-    "resourceName": "订单服务",
-    "resourceType": "APPLICATION",
-    "businessSystem": "订单系统",
-    "host": "192.168.1.100",
-    "port": 8080
-  }'
-
-# 批量上报
-curl -X POST http://localhost:8082/api/v1/resources/discover/batch \
-  -H "Content-Type: application/json" \
-  -d '[{"resourceId":"r1","resourceType":"MYSQL","businessSystem":"订单系统"}]'
-```
-
-### 4. 管理 Resource
-
-```bash
-# 创建
-curl -X POST http://localhost:8082/api/v1/resources \
-  -H "Content-Type: application/json" \
-  -d '{"resourceName":"订单服务","resourceType":"APPLICATION","businessSystem":"订单系统"}'
-
-# 查询
-curl http://localhost:8082/api/v1/resources/{id}
-
-# 按业务域查询
-curl "http://localhost:8082/api/v1/resources?business_system=订单系统"
-
-# 更新状态
-curl -X PATCH "http://localhost:8082/api/v1/resources/{id}/status?status=MAINTENANCE"
-
-# 删除
-curl -X DELETE http://localhost:8082/api/v1/resources/{id}
-```
-
-### 5. 数据流接入（M1 已支持）
-
-```bash
-# Agent 上报 Observation（已有）
-curl -X POST http://localhost:8081/api/v1/observations/batch \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agentId": "agent-001",
-    "observations": [
-      {"resource_id": "order-service-001", "metric_name": "cpu_usage", "metric_value": 85.5, "timestamp": 1784554140445}
-    ]
-  }'
-
-# 查询 Observation
-curl "http://localhost:8081/api/v1/observations?resource_id=order-service-001&metric_name=cpu_usage&start_time=0&end_time=9999999999999"
-```
-
----
-
-## 配置说明
-
-### 核心配置（application.yml）
-
-```yaml
-# MySQL 连接
-spring:
-  datasource:
-    mysql:
-      url: jdbc:mysql://localhost:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-      username: root
-      password: your_password
-      driver-class-name: com.mysql.cj.jdbc.Driver
-    clickhouse:
-      url: jdbc:clickhouse://localhost:8123/metric_observation?compress=0
-      username: default
-      password: your_password
-
-# MyBatis Plus
-mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true
-```
-
-### 数据库准备
-
-```sql
--- MySQL 数据库
-CREATE DATABASE IF NOT EXISTS aipe_metadata DEFAULT CHARSET utf8mb4;
-
--- ClickHouse 数据库（首次启动自动创建）
-CREATE DATABASE IF NOT EXISTS metric_observation;
-```
-
-系统启动时会自动执行 DDL 迁移（ALTER 列 + 创建索引）。
+| 表 | 引擎 | 用途 |
+|----|------|------|
+| observation_fact | MergeTree (PARTITION BY toYYYYMM(timestamp), ORDER BY (resource_id, metric_name, timestamp), TTL 365天) | 不可变运行事实 |
 
 ---
 
 ## API 参考
 
-### Resource API
+| 模块 | 核心 API |
+|------|---------|
+| **resource** | POST/GET/PUT/DELETE `/api/v1/resources[/{id}]` + `PATCH /{id}/status` |
+| **observation** | POST `/api/v1/observations` + `/batch` + GET `/api/v1/observations?resource_id=...` + `trend?interval=1m` |
+| **relationship** | POST/GET/DELETE `/api/v1/relationships[/{id}]` + `/upstream` + `/downstream` + `/neighbors` |
+| **topology** | GET `/api/v1/topology/current` + `/neighbors` + `/dependencies` + `/impact` + `/path` |
+| **timeline** | GET `/api/v1/timelines?resource_id=&metric_name=&start_time=&end_time=` + `/batch` + `/all` + `/enhanced` |
+| **evidence** | POST `/api/v1/evidences/generate` + GET `/{id}` + `/{id}/explain` + POST `/{id}/verify` |
+| **knowledge** | POST `/api/v1/knowledge` + GET `/{id}` + `/{id}/versions` + POST `/{id}/upgrade` + `/{id}/recommend` |
+| **recommendation** | POST `/api/v1/recommendations/generate` + GET `/{id}` + POST `/{id}/approve` + `/reject` + `/execute` |
+| **execution** | POST `/api/v1/executions` + POST `/{id}/complete` + `/{id}/rollback` + GET `/{id}` + `/{id}/report` + `/{id}/optimization` |
 
-| 方法 | 路径 | 说明 | 状态 |
-|------|------|------|------|
-| POST | `/api/v1/resources` | 创建资源 | ✅ |
-| GET | `/api/v1/resources/{id}` | 查询单个资源 | ✅ |
-| PUT | `/api/v1/resources/{id}` | 更新资源 | ✅ |
-| DELETE | `/api/v1/resources/{id}` | 删除资源（逻辑删除）| ✅ |
-| GET | `/api/v1/resources` | 列表查询（?business_system=xxx）| ✅ |
-| PATCH | `/api/v1/resources/{id}/status` | 更新状态 | ✅ |
-| POST | `/api/v1/resources/discover` | 资源发现（Connector 上报）| ✅ |
-| POST | `/api/v1/resources/discover/batch` | 批量资源发现 | ✅ |
+---
 
-### Observation API（M1 已有）
+## 部署架构（Docker Compose）
 
-| 方法 | 路径 | 说明 | 状态 |
-|------|------|------|------|
-| POST | `/api/v1/observations/batch` | Agent 批量上报 Observation | ✅ |
-| GET | `/api/v1/observations` | 查询 Observation | ✅ |
-| GET | `/api/v1/observations/latest` | 查询最新 Observation | ✅ |
-
-### Agent API（M1 已有）
-
-| 方法 | 路径 | 说明 | 状态 |
-|------|------|------|------|
-| POST | `/api/v1/agents/register` | Agent 注册 | ✅ |
-| POST | `/api/v1/agents/{id}/heartbeat` | Agent 心跳 | ✅ |
-
-### 统一响应格式
-
-```json
-{
-  "code": 0,
-  "message": "success",
-  "requestId": "uuid",
-  "timestamp": 1784554140445,
-  "data": { ... }
-}
 ```
-
-### 错误码
-
-| HTTP | code | 场景 |
-|------|------|------|
-| 200 | 0 | 成功 |
-| 400 | 400 | 参数校验失败 / 无 businessSystem |
-| 409 | 409 | 非法状态流转 |
-| 500 | 500 | 内部错误 |
+┌──────────────────────────────────────────────────────────────┐
+│  docker-compose.yml                                           │
+│  ┌─────────────────┐  ┌─────────────────────┐               │
+│  │ aipe-mysql       │  │ aipe-clickhouse      │               │
+│  │ mysql:8.0.33     │  │ clickhouse-server:23.8│              │
+│  │ :3306            │  │ :8123 / :9000        │              │
+│  │ root/root        │  │ default/pamirs@123   │              │
+│  └─────────────────┘  └─────────────────────┘               │
+│         │                     │                              │
+│         └──────────┬──────────┘                              │
+│                    │ aipe-network                            │
+└──────────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌──────────────────────────────────────────────────────────────┐
+│  8 个独立 Spring Boot 应用 (可独立部署 / 扩缩容)               │
+│  resource(8082)  observation(8083)  relationship(8084)       │
+│  timeline(8085)  evidence(8086)  knowledge(8087)             │
+│  recommendation(8088)  execution(8089)                      │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## 开发路线图
 
-### 已完成 ✅
+### M1（已完成）
+- Agent Bootstrap + Heartbeat
+- Connector SDK + JVM/Linux/Redis/MySQL 采集器
+- Observation Pipeline（序列化/验证/批处理/队列）
+- MySQL + ClickHouse 双存储
 
-- [x] M1: Agent + Connector + Observation Pipeline + Storage
-- [x] WP011: Resource Domain（统一资源抽象 + DDD + REST API）
-- [x] IM 体系：IM-000~IM-011（工程映射宪法）
-- [x] 四大基础标准：Architecture Laws / Specification / Blueprint / Gate
+### M2（已完成 — AI Domain Foundation）
 
-### 进行中 🔲
+| WP | 模块 | 状态 |
+|----|------|------|
+| WP011 Unified Resource Model | 统一资源抽象 | ✅ |
+| WP012 Observation Engine | 运行时构建 + ClickHouse 落地 | ✅ |
+| WP013 Relationship + Topology | 关系管理 + 拓扑投影 | ✅ |
+| WP014 Timeline Engine | 运行时统计特征 + 趋势检测 | ✅ |
+| WP015 Evidence Engine | 异常检测 + 因果推理 + 置信度 | ✅ |
+| WP016 Knowledge Engine | Verified Evidence → Knowledge + 版本管理 | ✅ |
+| WP017 Recommendation Engine | Knowledge → Resource 建议 + 优先级 | ✅ |
+| WP018 Execution + Optimization | 执行 + 效果验证 + Knowledge 更新闭环 | ✅ |
 
-- [ ] WP012: Observation Engine（Observation 领域模型）
-- [ ] WP013: Relationship Model（资源关系 + 图数据库）
-- [ ] WP014: Timeline Model（动态 Timeline 构建）
-
-### 待建设 🔲
-
-- [ ] WP015: Evidence Engine（异常检测 + 根因推理）
-- [ ] WP016: Knowledge Engine（知识沉淀 + 验证）
-- [ ] WP017: Recommendation Engine（优化建议生成）
-- [ ] WP018: Execution + Optimization（执行 + 闭环验证）
-- [ ] WP019~WP030: 高级能力（RCA / JMeter 集成 / 全链路压测编排）
-
-### 未来方向 🔲
-
-- [ ] 认证授权（RBAC + 多租户）
-- [ ] 审计日志 + 合规
-- [ ] 企业集成（CMDB / Jenkins / K8s / Jira）
-- [ ] 部署工具（Helm Chart / 一键安装）
-- [ ] SaaS 多租户
+### M3（规划中）
+- M3.1 自己公司部署验证（接入真实业务 + 收集验证数据）
+- M3.2 产品化（部署工具 + 前端 Dashboard + 安全 RBAC + 审计日志）
+- M3.3 企业集成（CMDB / Jenkins / Kubernetes 自动操作）
+- M3.4 客户交付（标杆客户 + 技术支持 + SLA）
 
 ---
 
-## 项目结构
-
-```
-AIPerformanceEngineer/
-├── aipe-agent/              # Agent（采集端，部署在企业机器上）
-├── aipe-backend/            # Backend（网关，接收 Agent 数据）
-├── aipe-common/             # 公共模块（ObservationData 等）
-├── aipe-config-manager/     # 配置管理
-├── aipe-connectors/         # Connector 实现
-│   ├── connector-sdk/       # Connector SPI
-│   ├── connector-jvm/       # JVM 采集
-│   ├── connector-linux/     # Linux 采集
-│   ├── connector-redis/     # Redis 采集
-│   └── connector-mysql/     # MySQL 采集
-├── aipe-observation/        # Observation 处理管线
-├── aipe-resource/           # Resource Domain（WP011 新增）
-├── aipe-storage/            # 存储层（MySQL + ClickHouse）
-├── docs/                    # 文档
-│   └── architecture/        # 架构规范（Constitution / IM / Laws）
-├── docker-compose.yml       # MySQL + ClickHouse 快速部署
-├── start.sh                 # 一键启动脚本
-└── pom.xml                  # 父 POM
-```
-
----
-
-## 技术栈
-
-| 组件 | 版本 | 说明 |
-|------|------|------|
-| Java | 1.8 | 运行环境 |
-| Spring Boot | 2.7.18 | 应用框架 |
-| MyBatis Plus | 3.5.3.1 | ORM |
-| Druid | 1.2.20 | 连接池 |
-| ClickHouse JDBC | 0.4.6 | ClickHouse 驱动 |
-| Jedis | 4.4.6 | Redis 客户端 |
-| Hutool | 5.8.22 | 工具库 |
-| Lombok | 1.18.30 | 代码简化 |
-| MySQL | 5.7+ / 8.0 | 元数据存储 |
-| ClickHouse | 21+ | 时序存储 |
-
----
-
-## 贡献指南
-
-### 开发流程
-
-1. 创建功能分支：`git checkout -b feature/wpXXX-name`
-2. 实现功能，遵循 IM 规范
-3. 编写集成测试（不允许 Mock）
-4. 确保 `mvn clean install` 通过
-5. 提交 PR
-
-### 编码规范
-
-- **DDD 分层**：Domain 保持 POJO（禁止 Spring/MyBatis 注解）
-- **命名规则**：见 `docs/architecture/M2-AI-Domain-Foundation/M2-001-Architecture-Laws/`
-- **真实实现**：禁止 TODO / Mock / 空方法
-- **SLF4J 日志**：禁止使用 System.out
-- **Lombok**：使用 @Data / @Builder /
+*Generated with [Claude Code](https://claude.com/claude-code)*
