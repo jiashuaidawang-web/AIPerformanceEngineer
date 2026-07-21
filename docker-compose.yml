@@ -1,43 +1,13 @@
 version: '3.8'
 
-x-default-logging: &default-logging
-  driver: "json-file"
-  options:
-    max-size: "10m"
-    max-file: "3"
-
-x-default-restart: &default-restart
-  restart: unless-stopped
-
-x-default-resources: &default-resources
-  deploy:
-    resources:
-      limits:
-        memory: 512M
-        cpus: '0.5'
-
-x-mysql-health: &mysql-health
-  test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-provalroot"]
-  interval: 10s
-  timeout: 5s
-  retries: 10
-  start_period: 30s
-
-x-ch-health: &ch-health
-  test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
-  interval: 10s
-  timeout: 5s
-  retries: 10
-  start_period: 15s
-
-# ========================================================================
-# Part A: 基础设施 —— MySQL + ClickHouse
-# ========================================================================
 services:
+  # ========================================================================
+  # Part A: 基础设施 —— MySQL + ClickHouse
+  # ========================================================================
   aipe-mysql:
     image: mysql:8.0.33
     container_name: aipe-mysql
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: aipe_metadata
@@ -48,13 +18,18 @@ services:
       - aipe-mysql-data:/var/lib/mysql
     networks:
       - aipe-network
-    <<: *mysql-health
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone='+08:00'
 
   aipe-clickhouse:
     image: clickhouse/clickhouse-server:23.8
     container_name: aipe-clickhouse
-    <<: *default-restart
+    restart: unless-stopped
     ports:
       - "8123:8123"
       - "9000:9000"
@@ -62,7 +37,12 @@ services:
       - aipe-clickhouse-data:/var/lib/clickhouse
     networks:
       - aipe-network
-    <<: *ch-health
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
     ulimits:
       nofile:
         soft: 262144
@@ -71,21 +51,18 @@ services:
       TZ: Asia/Shanghai
 
   # ========================================================================
-  # Part B: Domain Engine × 8（对齐 WP012~WP018）
-  # 启动顺序：resource → evidence/knowledge/recommendation/execution
-  #             observation/relationship/timeline（无内部依赖，可并行）
+  # Part B: Domain Engine × 8
   # ========================================================================
-
   aipe-resource:
     image: aipe/resource:1.0.0
     build:
       context: .
       dockerfile: aipe-resource/Dockerfile
     container_name: aipe-resource
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8082
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
     ports:
@@ -95,8 +72,11 @@ services:
     depends_on:
       aipe-mysql:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
       interval: 30s
@@ -110,10 +90,10 @@ services:
       context: .
       dockerfile: aipe-observation/Dockerfile
     container_name: aipe-observation
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8083
-      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: jdbc:clickhouse://aipe-clickhouse:8123/metric_observation
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://aipe-clickhouse:8123/metric_observation"
       SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
       SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: pamirs@123
     ports:
@@ -123,8 +103,11 @@ services:
     depends_on:
       aipe-clickhouse:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
       interval: 30s
@@ -138,10 +121,10 @@ services:
       context: .
       dockerfile: aipe-relationship/Dockerfile
     container_name: aipe-relationship
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8084
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
     ports:
@@ -151,8 +134,11 @@ services:
     depends_on:
       aipe-mysql:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
       interval: 30s
@@ -166,10 +152,10 @@ services:
       context: .
       dockerfile: aipe-timeline/Dockerfile
     container_name: aipe-timeline
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8085
-      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: jdbc:clickhouse://aipe-clickhouse:8123/metric_observation
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://aipe-clickhouse:8123/metric_observation"
       SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
       SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: pamirs@123
     ports:
@@ -179,8 +165,11 @@ services:
     depends_on:
       aipe-clickhouse:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aipe-evidence:
     image: aipe/evidence:1.0.0
@@ -188,13 +177,13 @@ services:
       context: .
       dockerfile: aipe-evidence/Dockerfile
     container_name: aipe-evidence
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8086
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
-      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: jdbc:clickhouse://aipe-clickhouse:8123/metric_observation
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://aipe-clickhouse:8123/metric_observation"
       SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
       SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: pamirs@123
     ports:
@@ -206,8 +195,11 @@ services:
         condition: service_healthy
       aipe-clickhouse:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aipe-knowledge:
     image: aipe/knowledge:1.0.0
@@ -215,10 +207,10 @@ services:
       context: .
       dockerfile: aipe-knowledge/Dockerfile
     container_name: aipe-knowledge
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8087
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
     ports:
@@ -228,8 +220,11 @@ services:
     depends_on:
       aipe-mysql:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aipe-recommendation:
     image: aipe/recommendation:1.0.0
@@ -237,10 +232,10 @@ services:
       context: .
       dockerfile: aipe-recommendation/Dockerfile
     container_name: aipe-recommendation
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8088
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
     ports:
@@ -250,8 +245,11 @@ services:
     depends_on:
       aipe-mysql:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   aipe-execution:
     image: aipe/execution:1.0.0
@@ -259,10 +257,10 @@ services:
       context: .
       dockerfile: aipe-execution/Dockerfile
     container_name: aipe-execution
-    <<: *default-restart
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8089
-      SPRING_DATASOURCE_MYSQL_URL: jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://aipe-mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
       SPRING_DATASOURCE_MYSQL_USERNAME: root
       SPRING_DATASOURCE_MYSQL_PASSWORD: root
     ports:
@@ -272,8 +270,11 @@ services:
     depends_on:
       aipe-mysql:
         condition: service_healthy
-    logging: *default-logging
-    <<: *default-resources
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   aipe-mysql-data:
