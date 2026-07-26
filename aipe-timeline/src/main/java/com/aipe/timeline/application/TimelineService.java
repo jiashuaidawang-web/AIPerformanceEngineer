@@ -74,8 +74,8 @@ public class TimelineService {
         TimelineSpecification.validate(normalizedQuery);
 
         // 2. 查询 Observation
-        List<ObservationQueryPort.ObservationData> observations =
-                observationQueryPort.queryByResourceAndTimeRange(
+        List<ObservationQueryPort.MetricPoint> observations =
+                observationQueryPort.queryMetricSeries(
                         normalizedQuery.getResourceId(),
                         normalizedQuery.getMetricName(),
                         normalizedQuery.getStartTime(),
@@ -84,7 +84,7 @@ public class TimelineService {
 
         // 3. 转为 TimelinePoint
         List<TimelinePoint> points = new ArrayList<>();
-        for (ObservationQueryPort.ObservationData obs : observations) {
+        for (ObservationQueryPort.MetricPoint obs : observations) {
             points.add(new TimelinePoint(
                     obs.getTimestamp(),
                     obs.getValue(),
