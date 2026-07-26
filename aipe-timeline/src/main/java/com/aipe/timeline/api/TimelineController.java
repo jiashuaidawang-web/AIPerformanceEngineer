@@ -49,11 +49,15 @@ public class TimelineController {
      * Single Timeline
      */
     @GetMapping
-    public ApiResponse<TimelineResponse> getTimeline(@Valid TimelineRequest request) {
+    public ApiResponse<TimelineResponse> getTimeline(
+            @RequestParam("resource_id") String resourceId,
+            @RequestParam("metric_name") String metricName,
+            @RequestParam("start_time") Long startTime,
+            @RequestParam("end_time") Long endTime,
+            @RequestParam(value = "limit", defaultValue = "10000") Integer limit) {
         TimelineQuery query = new TimelineQuery(
-                request.getResourceId(), request.getMetricName(),
-                request.getStartTime(), request.getEndTime(),
-                request.getLimit() != null ? request.getLimit() : 10000);
+                resourceId, metricName,
+                startTime, endTime, limit);
         Timeline timeline = timelineService.buildTimeline(query);
         return ApiResponse.success(toResponse(timeline));
     }
@@ -63,14 +67,13 @@ public class TimelineController {
      * Multi Timeline
      */
     @GetMapping("/batch")
-    public ApiResponse<List<TimelineResponse>> getTimelines(@Valid TimelineBatchRequest request) {
-        List<String> metricNames = request.getMetricNames() != null ? request.getMetricNames()
-                : java.util.Collections.emptyList();
-
-        TimelineQuery baseQuery = new TimelineQuery(
-                request.getResourceId(), null,
-                request.getStartTime(), request.getEndTime(),
-                request.getLimit() != null ? request.getLimit() : 10000);
+    public ApiResponse<List<TimelineResponse>> getTimelines(
+            @RequestParam("resource_id") String resourceId,
+            @RequestParam(value = "metric_names", required = false) List<String> metricNames,
+            @RequestParam("start_time") Long startTime,
+            @RequestParam("end_time") Long endTime,
+            @RequestParam(value = "limit", defaultValue = "10000") Integer limit) {
+        TimelineQuery baseQuery = new TimelineQuery(resourceId, null, startTime, endTime, limit);
         List<Timeline> timelines = timelineService.buildTimelines(baseQuery, metricNames);
         List<TimelineResponse> responses = timelines.stream()
                 .map(this::toResponse)
