@@ -38,7 +38,6 @@
       </el-table>
     </el-card>
   </div>
-</template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
@@ -71,4 +70,5 @@ async function handleApprove(row: Recommendation) {
 }
 
 onMounted(loadData)
-</style>
+</script>
+</template>

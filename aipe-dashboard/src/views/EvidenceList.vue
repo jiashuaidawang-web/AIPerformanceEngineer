@@ -56,10 +56,10 @@ async function loadEvidences() {
 async function showExplain(evidence: Evidence) {
   try {
     const res = await evidenceApi.explain(evidence.evidenceId)
-    currentExplain.value = res.data || evidence.explain()
+    currentExplain.value = res.data || JSON.stringify(evidence.reasoningSteps, null, 2)
     explainVisible.value = true
   } catch (e) {
-    currentExplain.value = evidence.explain()
+    currentExplain.value = JSON.stringify(evidence.reasoningSteps, null, 2)
     explainVisible.value = true
   }
 }

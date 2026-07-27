@@ -39,4 +39,4 @@ async function loadData() {
 }
 
 onMounted(loadData)
-</style>
+</script>
