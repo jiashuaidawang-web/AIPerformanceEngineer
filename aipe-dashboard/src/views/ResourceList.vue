@@ -132,7 +132,7 @@ async function handleCreate() {
   try {
     await resourceApi.create(form)
     ElMessage.success('创建成功')
-    dialogVisible = false
+    dialogVisible.value = false
     loadData()
   } catch (e) {
     // error handled by interceptor
