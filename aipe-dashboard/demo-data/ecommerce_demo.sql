@@ -131,7 +131,7 @@ INSERT INTO knowledge (pk_id, id, title, description, knowledge_type, evidence_i
 -- 5. Recommendation (推荐)
 -- ============================================================
 
-INSERT INTO recommendation (id,INSERT INTO recommendation (id, knowledge_id, target_resource_id, title, description, priority, confidence, expected_outcome, execution_plan, rollback_plan, status, created_at, updated_at, version) VALUES
+INSERT INTO recommendation (id, knowledge_id, target_resource_id, title, description, priority, confidence, expected_outcome, execution_plan, rollback_plan, status, created_at, updated_at, version) VALUES
 ('rec-001', 'know-002', 'order-svc-192-168-1-1', '扩容订单服务实例', '订单服务 192.168.1.1 CPU 持续 >90%, 建议扩容到 5 实例',
  'HIGH', 95.0, 'CPU 使用率降至 70% 以下, 系统容量提升 66%',
  '["1. 评估当前资源使用率","2. 备份当前配置","3. 在 192.168.1.4 部署新实例","4. 注册到 Nginx 负载均衡","5. 验证新实例健康状态"]',
