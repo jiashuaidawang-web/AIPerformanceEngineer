@@ -20,7 +20,7 @@ public class ResourceRegistrar {
     private final RestTemplate restTemplate;
 
     public ResourceRegistrar(AgentConfig config) {
-        this.resourceEngineUrl = config.getBackendUrl() + "/v1/resources";
+        this.resourceEngineUrl = config.getBackendUrl() + "/api/v1/resources";
         this.restTemplate = new RestTemplate();
     }
 
