@@ -206,34 +206,6 @@ async function createRelationship() {
   }
 }
 
-function openCreateDialog() {
-  form.sourceResourceId = ''
-  form.targetResourceId = ''
-  form.relationshipType = 'CALLS'
-  form.confidence = 90
-  dialogVisible.value = true
-}
-
-async function createRelationship() {
-  if (!form.sourceResourceId || !form.targetResourceId) {
-    ElMessage.warning('请选择源资源和目标资源')
-    return
-  }
-  try {
-    await relationshipApi.create({
-      sourceResourceId: form.sourceResourceId,
-      targetResourceId: form.targetResourceId,
-      relationshipType: form.relationshipType,
-      confidence: form.confidence,
-    })
-    ElMessage.success('创建成功')
-    dialogVisible.value = false
-    loadTopology()
-  } catch (e) {
-    ElMessage.error('创建失败')
-  }
-}
-
 onMounted(() => {
   loadTopology()
   window.addEventListener('resize', handleResize)
@@ -247,5 +219,5 @@ onUnmounted(() => {
 
 <style scoped>
 .header { display: flex; justify-content: space-between; align-items: center; }
-.meta { color: #909399; font-size: 13px; }
+.meta { color: #909399; font-size: 13px; margin-left: 10px; }
 </style>
