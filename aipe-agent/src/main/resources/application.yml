@@ -3,10 +3,10 @@
 # ============================================================
 
 agent:
-  agentId: ${AGENT_ID:-agent-001}
-  serverId: ${SERVER_ID:-server-001}
-  environment: ${ENV:-dev}
-  backendUrl: ${BACKEND_URL:-http://localhost:8081}
+  agentId: agent-001
+  serverId: server-001
+  environment: dev
+  backendUrl: http://108.160.128.34:8081
   schedulerPoolSize: 4
   sendTimeoutMs: 5000
   connectors:
