@@ -208,4 +208,3 @@ async function generateRecommendation() {
   }
 }
 </script>
-</el-dialog>
