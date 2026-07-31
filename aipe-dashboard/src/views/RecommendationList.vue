@@ -57,6 +57,32 @@
       </el-table>
       <el-empty v-if="!loading && !recommendations.length" description="暂无推荐数据" />
     </el-card>
+
+    <!-- 生成推荐对话框 -->
+    <el-dialog v-model="generateVisible" title="生成推荐" width="500px">
+      <el-form :model="generateForm" label-width="100px">
+        <el-form-item label="知识" required>
+          <el-select v-model="generateForm.knowledgeId" filterable placeholder="选择知识" style="width: 100%">
+            <el-option v-for="k in knowledgeList" :key="k.knowledgeId" :label="k.title" :value="k.knowledgeId" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="目标资源" required>
+          <el-select v-model="generateForm.targetResourceId" filterable placeholder="选择目标资源" style="width: 100%">
+            <el-option v-for="r in resourceList" :key="r.resourceId" :label="`${r.resourceName} (${r.resourceId})`" :value="r.resourceId" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="标题">
+          <el-input v-model="generateForm.title" placeholder="推荐标题" />
+        </el-form-item>
+        <el-form-item label="置信度">
+          <el-input-number v-model="generateForm.confidence" :min="0" :max="100" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="generateVisible = false">取消</el-button>
+        <el-button type="primary" @click="generateRecommendation">生成</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -182,29 +208,4 @@ async function generateRecommendation() {
   }
 }
 </script>
-
-<!-- 生成推荐对话框 -->
-<el-dialog v-model="generateVisible" title="生成推荐" width="500px">
-  <el-form :model="generateForm" label-width="100px">
-    <el-form-item label="知识" required>
-      <el-select v-model="generateForm.knowledgeId" filterable placeholder="选择知识" style="width: 100%">
-        <el-option v-for="k in knowledgeList" :key="k.knowledgeId" :label="k.title" :value="k.knowledgeId" />
-      </el-select>
-    </el-form-item>
-    <el-form-item label="目标资源" required>
-      <el-select v-model="generateForm.targetResourceId" filterable placeholder="选择目标资源" style="width: 100%">
-        <el-option v-for="r in resourceList" :key="r.resourceId" :label="`${r.resourceName} (${r.resourceId})`" :value="r.resourceId" />
-      </el-select>
-    </el-form-item>
-    <el-form-item label="标题">
-      <el-input v-model="generateForm.title" placeholder="推荐标题" />
-    </el-form-item>
-    <el-form-item label="置信度">
-      <el-input-number v-model="generateForm.confidence" :min="0" :max="100" style="width: 100%" />
-    </el-form-item>
-  </el-form>
-  <template #footer>
-    <el-button @click="generateVisible = false">取消</el-button>
-    <el-button type="primary" @click="generateRecommendation">生成</el-button>
-  </template>
 </el-dialog>
