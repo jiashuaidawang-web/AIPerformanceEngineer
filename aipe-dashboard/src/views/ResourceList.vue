@@ -44,15 +44,9 @@
         <el-table-column prop="environment" label="环境" width="100" />
         <el-table-column label="操作" width="280">
           <template #default="{ row }">
-            <el-button size="small" @click="$router.push(`/resources/${row.resourceId}`)">
-              详情
-            </el-button>
-            <el-button size="small" @click="openStatusDialog(row)">
-              状态
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
+            <el-button size="small" @click="$router.push(`/resources/${row.resourceId}`)">详情</el-button>
+            <el-button size="small" @click="openStatusDialog(row)">状态</el-button>
+            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -78,21 +72,10 @@
             <el-option label="test" value="test" />
           </el-select>
         </el-form-item>
-
         <template v-if="typeFields.length">
           <el-divider content-position="left">连接配置</el-divider>
-          <el-form-item
-            v-for="field in typeFields"
-            :key="field.key"
-            :label="field.label"
-            :required="field.required"
-          >
-            <el-input
-              v-model="form.attributes[field.key]"
-              :type="field.type"
-              :placeholder="field.placeholder"
-              :show-password="field.type === 'password'"
-            />
+          <el-form-item v-for="field in typeFields" :key="field.key" :label="field.label" :required="field.required">
+            <el-input v-model="form.attributes[field.key]" :type="field.type" :placeholder="field.placeholder" :show-password="field.type === 'password'" />
           </el-form-item>
         </template>
       </el-form>
@@ -102,7 +85,6 @@
       </template>
     </el-dialog>
 
-    <!-- 状态变更对话框 -->
     <el-dialog v-model="statusDialogVisible" title="变更资源状态" width="400px">
       <el-form label-width="80px">
         <el-form-item label="当前状态">
@@ -126,7 +108,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import { resourceApi, type Resource } from '@/api'
 import { RESOURCE_TYPES, getFieldsForType } from '@/config/resourceFormFields'
 
@@ -156,11 +139,7 @@ const types = RESOURCE_TYPES
 const typeFields = computed(() => getFieldsForType(form.resourceType))
 
 function statusTag(status: string) {
-  const map: Record<string, string> = {
-    RUNNING: 'success',
-    STOPPED: 'danger',
-    MAINTENANCE: 'warning',
-  }
+  const map: Record<string, string> = { RUNNING: 'success', STOPPED: 'danger', MAINTENANCE: 'warning' }
   return map[status] || 'info'
 }
 
@@ -223,10 +202,6 @@ async function handleCreate() {
   }
 }
 
-const statusDialogVisible = ref(false)
-const currentResource = ref<Resource | null>(null)
-const newStatus = ref('RUNNING')
-
 function openStatusDialog(row: Resource) {
   currentResource.value = row
   newStatus.value = row.status
@@ -258,63 +233,6 @@ async function handleDelete(row: Resource) {
 
 onMounted(loadData)
 </script>
-
-<script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { resourceApi, type Resource } from '@/api'
-import { RESOURCE_TYPES, getFieldsForType } from '@/config/resourceFormFields'
-
-// ... existing code ...
-
-function openStatusDialog(row: Resource) {
-  currentResource.value = row
-  newStatus.value = row.status
-  statusDialogVisible.value = true
-}
-
-async function updateStatus() {
-  if (!currentResource.value) return
-  try {
-    await resourceApi.updateStatus(currentResource.value.resourceId, newStatus.value)
-    ElMessage.success('状态更新成功')
-    statusDialogVisible.value = false
-    loadData()
-  } catch (e) {
-    ElMessage.error('状态更新失败')
-  }
-}
-
-async function handleDelete(row: Resource) {
-  await ElMessageBox.confirm(`确定删除资源 "${row.resourceName}"？`, '提示', { type: 'warning' })
-  try {
-    await resourceApi.delete(row.resourceId)
-    ElMessage.success('删除成功')
-    loadData()
-  } catch (e) {
-    ElMessage.error('删除失败')
-  }
-}
-
-<!-- 状态变更对话框 -->
-<el-dialog v-model="statusDialogVisible" title="变更资源状态" width="400px">
-  <el-form label-width="80px">
-    <el-form-item label="当前状态">
-      <el-tag :type="statusTag(currentResource?.status)">{{ currentResource?.status }}</el-tag>
-    </el-form-item>
-    <el-form-item label="新状态">
-      <el-select v-model="newStatus" style="width: 100%">
-        <el-option label="RUNNING" value="RUNNING" />
-        <el-option label="STOPPED" value="STOPPED" />
-        <el-option label="MAINTENANCE" value="MAINTENANCE" />
-      </el-select>
-    </el-form-item>
-  </el-form>
-  <template #footer>
-    <el-button @click="statusDialogVisible = false">取消</el-button>
-    <el-button type="primary" @click="updateStatus">确认</el-button>
-  </template>
-</el-dialog>
 
 <style scoped>
 .header { display: flex; justify-content: space-between; align-items: center; }
