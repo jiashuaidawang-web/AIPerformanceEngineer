@@ -11,6 +11,7 @@ import java.util.Map;
 
 /**
  * 资源注册器 - Agent 自动注册资源到 Resource Engine
+ * 使用 host_type 作为唯一标识避免重复注册
  */
 public class ResourceRegistrar {
 
@@ -18,16 +19,21 @@ public class ResourceRegistrar {
 
     private final String resourceEngineUrl;
     private final RestTemplate restTemplate;
+    private final String hostPrefix;
 
     public ResourceRegistrar(AgentConfig config) {
         this.resourceEngineUrl = config.getBackendUrl() + "/api/v1/resources";
         this.restTemplate = new RestTemplate();
+        // 使用 Agent ID 作为前缀，确保不同机器的资源 ID 唯一
+        this.hostPrefix = config.getAgentId() + "-";
     }
 
     /**
      * 注册资源（如果不存在则创建）
      */
-    public void registerResource(String resourceId, String resourceType, String resourceName) {
+    public void registerResource(String baseResourceId, String resourceType, String resourceName) {
+        String resourceId = hostPrefix + baseResourceId;
+
         try {
             // 先检查资源是否存在
             try {
@@ -53,7 +59,7 @@ public class ResourceRegistrar {
 
             Map<String, String> attributes = new HashMap<>();
             attributes.put("discoveredBy", "agent");
-            attributes.put("resourceId", resourceId);
+            attributes.put("agentId", hostPrefix.substring(0, hostPrefix.length() - 1));
             request.put("attributes", attributes);
 
             ResponseEntity<Map> response = restTemplate.postForEntity(resourceEngineUrl, request, Map.class);
@@ -69,14 +75,14 @@ public class ResourceRegistrar {
     }
 
     /**
-     * 批量注册多个资源
+     * 批量注册多个资源（仅在启动时调用一次）
      */
     public void registerResources(String[][] resources) {
         for (String[] resource : resources) {
-            String resourceId = resource[0];
+            String baseResourceId = resource[0];
             String resourceType = resource[1];
-            String resourceName = resource.length > 2 ? resource[2] : resourceType + "-" + resourceId.substring(Math.max(0, resourceId.length() - 6));
-            registerResource(resourceId, resourceType, resourceName);
+            String resourceName = resource.length > 2 ? resource[2] : resourceType + "-" + baseResourceId;
+            registerResource(baseResourceId, resourceType, resourceName);
         }
     }
 }

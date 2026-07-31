@@ -96,12 +96,12 @@ public class AgentRuntime {
     }
 
     /**
-     * 自动注册资源
+     * 自动注册资源（仅在启动时调用一次）
      */
     private void registerResources() {
         try {
             log.info("Auto-discovering and registering resources...");
-            // 注册 Agent 发现的资源
+            // 注册 Agent 发现的资源，使用唯一 ID (agentId-baseId)
             String[][] resources = {
                 {"jvm-local", "JVM", "JVM进程"},
                 {"linux-local", "LINUX", "Linux服务器"},
