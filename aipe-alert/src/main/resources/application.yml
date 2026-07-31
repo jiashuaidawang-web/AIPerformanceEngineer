@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: aipe-alert
+  datasource:
+    druid:
+      url: jdbc:mysql://124.223.220.245:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: root
+      password: astock_root
+      driver-class-name: com.mysql.cj.jdbc.Driver
 
 logging:
   level:
