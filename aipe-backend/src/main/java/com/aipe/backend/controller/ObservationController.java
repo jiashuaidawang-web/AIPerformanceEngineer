@@ -3,6 +3,7 @@ package com.aipe.backend.controller;
 import com.aipe.backend.dto.ObservationBatchRequest;
 import com.aipe.backend.dto.ObservationQueryResponse;
 import com.aipe.backend.service.ObservationService;
+import com.aipe.backend.service.ResourceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
