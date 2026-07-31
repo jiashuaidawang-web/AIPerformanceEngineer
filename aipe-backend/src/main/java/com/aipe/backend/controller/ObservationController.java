@@ -25,6 +25,9 @@ public class ObservationController {
   @Autowired
   private ObservationService observationService;
 
+  @Autowired
+  private ResourceService resourceService;
+
   /**
    * Agent 批量上报 Observation
    * POST /api/v1/observations/batch
@@ -34,6 +37,12 @@ public class ObservationController {
     if (request != null && request.getObservations() != null) {
       String resourceType = request.getConnectorType() != null ? request.getConnectorType() : "HOST";
       observationService.saveObservations(request.getObservations(), resourceType);
+
+      // 自动注册资源
+      for (Map<String, Object> obs : request.getObservations()) {
+        String resourceId = obs.getOrDefault("resource_id", "unknown").toString();
+        resourceService.autoRegisterResource(resourceId, resourceType);
+      }
     }
     Map<String, Object> map = new HashMap<>();
     map.put("status", "ok");
