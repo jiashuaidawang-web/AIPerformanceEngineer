@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.ai.performance</groupId>
+        <artifactId>aipe-connectors</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>connector-zookeeper</artifactId>
+    <packaging>jar</packaging>
+    <name>connector-zookeeper</name>
+    <description>ZooKeeper Connector - collects ZK metrics via 4-letter commands</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>connector-sdk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>aipe-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

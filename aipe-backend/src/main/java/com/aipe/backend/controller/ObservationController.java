@@ -32,7 +32,8 @@ public class ObservationController {
   @PostMapping("/batch")
   public Map<String, Object> batchSave(@RequestBody ObservationBatchRequest request) {
     if (request != null && request.getObservations() != null) {
-      observationService.saveObservations(request.getObservations());
+      String resourceType = request.getConnectorType() != null ? request.getConnectorType() : "HOST";
+      observationService.saveObservations(request.getObservations(), resourceType);
     }
     Map<String, Object> map = new HashMap<>();
     map.put("status", "ok");

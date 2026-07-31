@@ -23,46 +23,16 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/v1/resources': {
-        target: 'http://localhost:8082',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/observations': {
-        target: 'http://localhost:8083',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/relationships': {
-        target: 'http://localhost:8084',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/timelines': {
-        target: 'http://localhost:8085',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/evidences': {
-        target: 'http://localhost:8086',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/knowledge': {
-        target: 'http://localhost:8087',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/recommendations': {
-        target: 'http://localhost:8088',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
-      '/v1/executions': {
-        target: 'http://localhost:8089',
-        changeOrigin: true,
-        rewrite: (path) => '/api' + path,
-      },
+      '/api/v1/resources': { target: 'http://localhost:8082', changeOrigin: true },
+      '/api/v1/observations': { target: 'http://localhost:8083', changeOrigin: true },
+      '/api/v1/relationships': { target: 'http://localhost:8084', changeOrigin: true },
+      '/api/v1/topology': { target: 'http://localhost:8084', changeOrigin: true },
+      '/api/v1/timelines': { target: 'http://localhost:8085', changeOrigin: true },
+      '/api/v1/evidences': { target: 'http://localhost:8086', changeOrigin: true },
+      '/api/v1/knowledge': { target: 'http://localhost:8087', changeOrigin: true },
+      '/api/v1/recommendations': { target: 'http://localhost:8088', changeOrigin: true },
+      '/api/v1/executions': { target: 'http://localhost:8089', changeOrigin: true },
+      '/api/v1/alerts': { target: 'http://localhost:8090', changeOrigin: true },
     },
   },
   build: {

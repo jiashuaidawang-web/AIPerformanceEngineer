@@ -25,6 +25,13 @@ public class ObservationService {
      * 批量保存 Observation
      */
     public void saveObservations(List<Map<String, Object>> observations) {
+        saveObservations(observations, "HOST");
+    }
+
+    /**
+     * 批量保存 Observation (带 resourceType)
+     */
+    public void saveObservations(List<Map<String, Object>> observations, String resourceType) {
         if (observations == null || observations.isEmpty()) return;
 
         for (Map<String, Object> obs : observations) {
@@ -36,7 +43,7 @@ public class ObservationService {
                         Long.parseLong(obs.get("timestamp").toString()) : System.currentTimeMillis();
                 String tags = obs.getOrDefault("tags", "{}").toString();
 
-                clickHouseClient.insertObservation(resourceId, metricName, metricValue, timestamp, tags);
+                clickHouseClient.insertObservation(resourceId, metricName, metricValue, timestamp, tags, resourceType);
             } catch (Exception e) {
                 log.warn("Failed to save observation: {}", e.getMessage());
             }

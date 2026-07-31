@@ -6,12 +6,12 @@ spring:
     name: aipe-config-manager
   datasource:
     mysql:
-      url: jdbc:mysql://localhost:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      url: jdbc:mysql://124.223.220.245:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
       username: root
       password: astock_root
       driver-class-name: com.mysql.cj.jdbc.Driver
     clickhouse:
-      url: jdbc:clickhouse://localhost:8123/metric_observation
+      url: jdbc:clickhouse://124.223.220.245:8123/metric_observation
       username: default
       password: pamirs@123
       driver-class-name: com.clickhouse.jdbc.ClickHouseDriver

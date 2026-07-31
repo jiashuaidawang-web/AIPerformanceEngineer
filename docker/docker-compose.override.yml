@@ -1,0 +1,59 @@
+# ============================================================
+# Docker Compose Override - 生产环境配置
+# 
+# 使用方法:
+#   docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+# ============================================================
+
+version: '3.8'
+
+services:
+  mysql:
+    ports:
+      - "127.0.0.1:3306:3306"  # 只允许本地连接
+
+  clickhouse:
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  # 生产环境限制资源
+  resource:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  observation:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  timeline:
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  backend:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    restart: always
+
+  dashboard:
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro  # SSL 证书

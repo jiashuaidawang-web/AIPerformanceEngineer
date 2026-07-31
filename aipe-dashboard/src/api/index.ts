@@ -16,16 +16,6 @@ export interface Resource {
   updatedTime: string
 }
 
-export interface Observation {
-  observationId: string
-  resourceId: string
-  type: string
-  name: string
-  value: number
-  unit: string
-  timestamp: number
-}
-
 export interface TimelineStats {
   min: number
   max: number
@@ -45,6 +35,16 @@ export interface TimelineData {
   stats: TimelineStats
 }
 
+export interface Relationship {
+  relationshipId: string
+  relationshipType: string
+  sourceResourceId: string
+  targetResourceId: string
+  direction: string
+  confidence: number
+  status: string
+}
+
 export interface Evidence {
   evidenceId: string
   evidenceType: string
@@ -61,6 +61,7 @@ export interface Knowledge {
   title: string
   description: string
   knowledgeType: string
+  evidenceId?: string
   confidence: number
   successRate: number
   applicableConditions: Record<string, string>
@@ -89,48 +90,81 @@ export interface Execution {
   finishedAt: string
 }
 
-// Resource APIs
 export const resourceApi = {
-  list: (params?: any) => request.get('/v1/resources', { params }),
+  list: (params?: Record<string, string>) => request.get('/v1/resources', { params }),
   get: (id: string) => request.get(`/v1/resources/${id}`),
-  create: (data: Partial<Resource>) => request.post('/v1/resources', data),
+  create: (data: Record<string, unknown>) => request.post('/v1/resources', data),
+  updateStatus: (id: string, status: string) => request.patch(`/v1/resources/${id}/status`, { status }),
   delete: (id: string) => request.delete(`/v1/resources/${id}`),
 }
 
-// Observation APIs
 export const observationApi = {
-  query: (params: any) => request.get('/v1/observations', { params }),
-  batch: (data: any) => request.post('/v1/observations/batch', data),
+  query: (params: Record<string, unknown>) => request.get('/v1/observations', { params }),
+  trend: (params: Record<string, unknown>) => request.get('/v1/observations/trend', { params }),
+  latest: (params: Record<string, unknown>) => request.get('/v1/observations/latest', { params }),
+  batch: (data: unknown) => request.post('/v1/observations/batch', data),
 }
 
-// Timeline APIs
 export const timelineApi = {
-  query: (params: any) => request.get('/v1/timelines', { params }),
+  query: (params: Record<string, unknown>) => request.get('/v1/timelines', { params }),
+  batch: (params: Record<string, unknown>) => request.get('/v1/timelines/batch', { params }),
+  all: (params: Record<string, unknown>) => request.get('/v1/timelines/all', { params }),
+  availableMetrics: (resourceId: string, startTime?: number, endTime?: number) =>
+    request.get('/v1/timelines/metrics', { params: { resource_id: resourceId, start_time: startTime || 0, end_time: endTime || Date.now() } }),
 }
 
-// Evidence APIs
+export const relationshipApi = {
+  list: (params?: Record<string, string>) => request.get('/v1/relationships', { params }),
+  create: (data: Record<string, unknown>) => request.post('/v1/relationships', data),
+  delete: (id: string) => request.delete(`/v1/relationships/${id}`),
+}
+
+export const topologyApi = {
+  current: (resourceId: string, type?: string) =>
+    request.get('/v1/topology/current', { params: { resource_id: resourceId, type } }),
+}
+
 export const evidenceApi = {
-  list: (params?: any) => request.get('/v1/evidences', { params }),
-  generate: (data: any) => request.post('/v1/evidences/generate', data),
+  list: (params?: Record<string, string>) => request.get('/v1/evidences', { params }),
+  generate: (data: Record<string, unknown>) => request.post('/v1/evidences/generate', data),
   explain: (id: string) => request.get(`/v1/evidences/${id}/explain`),
+  verify: (id: string, approved: boolean) => request.post(`/v1/evidences/${id}/verify`, { approved }),
 }
 
-// Knowledge APIs
 export const knowledgeApi = {
-  list: (params?: any) => request.get('/v1/knowledge', { params }),
-  create: (data: any) => request.post('/v1/knowledge', data),
+  list: (params?: Record<string, string>) => request.get('/v1/knowledge', { params }),
+  create: (data: Record<string, unknown>) => request.post('/v1/knowledge', data),
 }
 
-// Recommendation APIs
 export const recommendationApi = {
-  list: (params?: any) => request.get('/v1/recommendations', { params }),
-  generate: (data: any) => request.post('/v1/recommendations/generate', data),
+  list: (params?: Record<string, string>) => request.get('/v1/recommendations', { params }),
+  generate: (data: Record<string, unknown>) => request.post('/v1/recommendations/generate', data),
   approve: (id: string) => request.post(`/v1/recommendations/${id}/approve`),
+  reject: (id: string) => request.post(`/v1/recommendations/${id}/reject`),
+  execute: (id: string) => request.post(`/v1/recommendations/${id}/execute`),
 }
 
-// Execution APIs
 export const executionApi = {
-  list: (params?: any) => request.get('/v1/executions', { params }),
-  create: (data: any) => request.post('/v1/executions', data),
+  list: (params?: Record<string, string>) => request.get('/v1/executions', { params }),
+  create: (data: Record<string, unknown>) => request.post('/v1/executions', data),
   report: (id: string) => request.get(`/v1/executions/${id}/report`),
+}
+
+export const alertApi = {
+  listRules: () => request.get('/v1/alerts/rules'),
+  createRule: (data: Record<string, unknown>) => request.post('/v1/alerts/rules', data),
+  updateRule: (id: string, data: Record<string, unknown>) => request.put(`/v1/alerts/rules/${id}`, data),
+  deleteRule: (id: string) => request.delete(`/v1/alerts/rules/${id}`),
+  listRecords: (status?: string) => request.get('/v1/alerts/records', { params: status ? { status } : {} }),
+  testTrigger: (data: Record<string, unknown>) => request.post('/v1/alerts/test/trigger', data),
+}
+
+export const agentApi = {
+  list: () => request.get('/v1/agents'),
+  delete: (id: string) => request.delete(`/v1/agents/${id}`),
+}
+
+export const configApi = {
+  publish: (agentId: string, config: Record<string, unknown>) => request.post(`/api/v1/configs/${agentId}/publish`, config),
+  sendCommand: (agentId: string, command: string) => request.post(`/api/v1/agents/${agentId}/command`, { command }),
 }

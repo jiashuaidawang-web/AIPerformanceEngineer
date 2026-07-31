@@ -1,0 +1,15 @@
+FROM openjdk:8-jre-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl tzdata
+ENV TZ=Asia/Shanghai
+
+COPY target/aipe-resource-1.0.0-SNAPSHOT.jar app.jar
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/ || exit 1
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

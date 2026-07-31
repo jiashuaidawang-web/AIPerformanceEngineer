@@ -113,6 +113,19 @@ public class TimelineController {
     }
 
     /**
+     * GET /api/v1/metrics?resource_id=xxx&start_time=xxx&end_time=xxx
+     * 获取资源可用指标列表
+     */
+    @GetMapping("/metrics")
+    public ApiResponse<List<String>> getAvailableMetrics(
+            @RequestParam("resource_id") String resourceId,
+            @RequestParam(value = "start_time", defaultValue = "0") Long startTime,
+            @RequestParam(value = "end_time", defaultValue = "9999999999999") Long endTime) {
+        List<String> metrics = timelineService.getDistinctMetricNames(resourceId, startTime, endTime);
+        return ApiResponse.success(metrics);
+    }
+
+    /**
      * Timeline → TimelineResponse
      */
     private TimelineResponse toResponse(Timeline timeline) {

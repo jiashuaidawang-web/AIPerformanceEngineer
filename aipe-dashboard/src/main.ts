@@ -6,8 +6,10 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { setupEcharts } from './plugins/echarts'
 
 const app = createApp(App)
+setupEcharts(app)
 
 // 注册所有 Element Plus 图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

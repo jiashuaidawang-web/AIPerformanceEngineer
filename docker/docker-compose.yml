@@ -1,0 +1,414 @@
+version: '3.8'
+
+# ============================================================
+# AI Performance Engineer - 完整平台 Docker Compose
+# 
+# 使用方法:
+#   1. 构建: docker-compose build
+#   2. 启动: docker-compose up -d
+#   3. 查看: docker-compose logs -f
+#   4. 停止: docker-compose down
+#
+# 访问地址:
+#   Dashboard:    http://localhost
+#   Backend API:  http://localhost:8081
+#   Config Mgr:   http://localhost:8080
+# ============================================================
+
+services:
+  # ============================================================
+  # 基础设施层
+  # ============================================================
+  
+  mysql:
+    image: mysql:8.0.33
+    container_name: aipe-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: aipe_metadata
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - aipe-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-time-zone='+08:00'
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: aipe-clickhouse
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      - ./init/clickhouse-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - aipe-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      TZ: Asia/Shanghai
+
+  redis:
+    image: redis:7-alpine
+    container_name: aipe-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - aipe-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # ============================================================
+  # Domain Engine 层 (8 个微服务)
+  # ============================================================
+
+  resource:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.resource
+    image: aipe/resource:1.0.0
+    container_name: aipe-resource
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8082:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/resources"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  observation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.observation
+    image: aipe/observation:1.0.0
+    container_name: aipe-observation
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://clickhouse:8123/metric_observation"
+      SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
+      SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8083:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/observations"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  relationship:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.relationship
+    image: aipe/relationship:1.0.0
+    container_name: aipe-relationship
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8084:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/relationships"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  timeline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.timeline
+    image: aipe/timeline:1.0.0
+    container_name: aipe-timeline
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://clickhouse:8123/metric_observation"
+      SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
+      SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8085:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/timelines?resource_id=test&metric_name=test&start_time=0&end_time=1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  evidence:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.evidence
+    image: aipe/evidence:1.0.0
+    container_name: aipe-evidence
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://clickhouse:8123/metric_observation"
+      SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
+      SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8086:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/evidences"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  knowledge:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.knowledge
+    image: aipe/knowledge:1.0.0
+    container_name: aipe-knowledge
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8087:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/knowledge"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  recommendation:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.recommendation
+    image: aipe/recommendation:1.0.0
+    container_name: aipe-recommendation
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8088:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/recommendations"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  execution:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.execution
+    image: aipe/execution:1.0.0
+    container_name: aipe-execution
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8089:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/executions"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ============================================================
+  # 控制面
+  # ============================================================
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    image: aipe/backend:1.0.0
+    container_name: aipe-backend
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+      SPRING_DATASOURCE_CLICKHOUSE_JDBC_URL: "jdbc:clickhouse://clickhouse:8123/metric_observation?compress=0"
+      SPRING_DATASOURCE_CLICKHOUSE_USERNAME: default
+      SPRING_DATASOURCE_CLICKHOUSE_PASSWORD: ""
+    ports:
+      - "8081:8081"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/agents"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  config-manager:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.config-manager
+    image: aipe/config-manager:1.0.0
+    container_name: aipe-config-manager
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_MYSQL_URL: "jdbc:mysql://mysql:3306/aipe_metadata?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false"
+      SPRING_DATASOURCE_MYSQL_USERNAME: root
+      SPRING_DATASOURCE_MYSQL_PASSWORD: root
+    ports:
+      - "8080:8080"
+    networks:
+      - aipe-network
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/agents"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ============================================================
+  # 前端 Dashboard
+  # ============================================================
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dashboard
+    image: aipe/dashboard:1.0.0
+    container_name: aipe-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - aipe-network
+    depends_on:
+      - resource
+      - observation
+      - relationship
+      - timeline
+      - evidence
+      - knowledge
+      - recommendation
+      - execution
+      - config-manager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ============================================================
+# 网络 & 存储
+# ============================================================
+
+networks:
+  aipe-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+  clickhouse-data:
+    driver: local
+  redis-data:
+    driver: local

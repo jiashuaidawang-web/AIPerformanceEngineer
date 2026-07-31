@@ -20,5 +20,9 @@
         <module>connector-linux</module>
         <module>connector-redis</module>
         <module>connector-mysql</module>
+        <module>connector-kafka</module>
+        <module>connector-rocketmq</module>
+        <module>connector-zookeeper</module>
+        <module>connector-elasticsearch</module>
     </modules>
 </project>

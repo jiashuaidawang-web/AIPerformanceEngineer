@@ -60,6 +60,24 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ExecutionList.vue'),
         meta: { title: '执行', icon: 'VideoPlay' },
       },
+      {
+        path: 'alerts',
+        name: 'AlertRules',
+        component: () => import('@/views/AlertRules.vue'),
+        meta: { title: '告警规则', icon: 'Bell' },
+      },
+      {
+        path: 'alerts/records',
+        name: 'AlertRecords',
+        component: () => import('@/views/AlertRecords.vue'),
+        meta: { title: '告警记录', hidden: true },
+      },
+      {
+        path: 'agents',
+        name: 'AgentManagement',
+        component: () => import('@/views/AgentManagement.vue'),
+        meta: { title: 'Agent 管理', icon: 'Monitor' },
+      },
     ],
   },
 ]

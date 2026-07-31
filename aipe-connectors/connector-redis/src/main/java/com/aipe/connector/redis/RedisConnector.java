@@ -135,12 +135,15 @@ public class RedisConnector extends AbstractConnector {
     @Override
     protected void onStop() {
         log.info("RedisConnector stopping...");
+        // 不立即清空 connection，让正在执行的 collect 完成
     }
 
     @Override
     protected void onDestroy() {
+        // 延迟销毁，避免采集任务 NPE
+        try { Thread.sleep(100); } catch (InterruptedException ignored) {}
         if (connection != null) {
-            connection.disconnect();
+            try { connection.disconnect(); } catch (Exception ignored) {}
             connection = null;
         }
         collectors.clear();

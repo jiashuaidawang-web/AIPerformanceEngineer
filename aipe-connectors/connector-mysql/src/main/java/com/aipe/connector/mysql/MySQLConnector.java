@@ -131,6 +131,11 @@ public class MySQLConnector extends AbstractConnector {
 
         for (MySQLCollector collector : collectors) {
             try {
+                // 双重检查：采集过程中 connection 可能被 destroy
+                if (connection == null || !connection.isConnected()) {
+                    log.warn("MySQL connection lost during collection, aborting");
+                    break;
+                }
                 List<ObservationData> data = collector.collect(connection, agentId, connectorId);
                 if (data != null && !data.isEmpty()) allResults.addAll(data);
             } catch (Exception e) {
@@ -142,11 +147,19 @@ public class MySQLConnector extends AbstractConnector {
     }
 
     @Override
-    protected void onStop() { log.info("MySQLConnector stopping..."); }
+    protected void onStop() {
+        log.info("MySQLConnector stopping...");
+        // 不立即清空 connection，让正在执行的 collect 完成
+    }
 
     @Override
     protected void onDestroy() {
-        if (connection != null) { connection.disconnect(); connection = null; }
+        // 延迟销毁，避免采集任务 NPE
+        try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+        if (connection != null) {
+            try { connection.disconnect(); } catch (Exception ignored) {}
+            connection = null;
+        }
         collectors.clear();
         log.info("MySQLConnector destroyed.");
     }

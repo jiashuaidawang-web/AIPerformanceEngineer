@@ -1,0 +1,15 @@
+FROM openjdk:8-jre-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl tzdata
+ENV TZ=Asia/Shanghai
+
+COPY target/aipe-agent-1.0.0-SNAPSHOT.jar app.jar
+COPY docker/agent-config.yaml config.yaml
+
+# Agent 不需要暴露端口（只出向）
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD pgrep -f "aipe-agent" || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.config.location=config.yaml"]

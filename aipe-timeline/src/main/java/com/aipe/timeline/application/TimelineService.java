@@ -180,6 +180,15 @@ public class TimelineService {
     }
 
     /**
+     * 获取资源可用指标列表
+     */
+    public List<String> getDistinctMetricNames(String resourceId, long startTime, long endTime) {
+        startTime = TimelineSpecification.normalizeTimestamp(startTime);
+        endTime = TimelineSpecification.normalizeTimestamp(endTime);
+        return observationQueryPort.queryDistinctMetricNames(resourceId, startTime, endTime);
+    }
+
+    /**
      * 解析 labels JSON 字符串为 Map
      */
     private Map<String, String> parseLabels(String labels) {

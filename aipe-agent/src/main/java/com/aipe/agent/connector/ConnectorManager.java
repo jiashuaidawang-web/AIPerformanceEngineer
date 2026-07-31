@@ -206,6 +206,23 @@ public class ConnectorManager {
             return new MySQLConnector();
         }
 
+        // WP006+: Kafka/RocketMQ/ZooKeeper/Elasticsearch Connector
+        if ("KAFKA".equalsIgnoreCase(type)) {
+            return new com.aipe.connector.kafka.KafkaConnector();
+        }
+
+        if ("ROCKETMQ".equalsIgnoreCase(type)) {
+            return new com.aipe.connector.rocketmq.RocketMQConnector();
+        }
+
+        if ("ZOOKEEPER".equalsIgnoreCase(type)) {
+            return new com.aipe.connector.zookeeper.ZooKeeperConnector();
+        }
+
+        if ("ELASTICSEARCH".equalsIgnoreCase(type)) {
+            return new com.aipe.connector.elasticsearch.ElasticsearchConnector();
+        }
+
         log.warn("Unknown connector type={}, skipping", type);
         return null;
     }

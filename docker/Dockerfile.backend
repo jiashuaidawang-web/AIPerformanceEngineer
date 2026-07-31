@@ -1,0 +1,18 @@
+FROM openjdk:8-jre-alpine
+
+WORKDIR /app
+
+# 安装必要工具
+RUN apk add --no-cache curl tzdata
+ENV TZ=Asia/Shanghai
+
+# 复制 JAR
+COPY target/aipe-backend-1.0.0-SNAPSHOT.jar app.jar
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8081/ || exit 1
+
+EXPOSE 8081
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

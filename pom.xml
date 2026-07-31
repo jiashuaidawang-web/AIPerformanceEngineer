@@ -51,6 +51,7 @@
         <module>aipe-recommendation</module>
         <module>aipe-execution</module>
         <module>aipe-backend</module>
+        <module>aipe-alert</module>
     </modules>
 
     <dependencyManagement>

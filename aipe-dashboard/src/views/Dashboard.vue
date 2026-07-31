@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard" v-loading="loading">
     <el-row :gutter="20">
       <el-col :span="6">
         <el-card>
@@ -9,19 +9,19 @@
       </el-col>
       <el-col :span="6">
         <el-card>
-          <template #header>今日 Observation</template>
-          <div class="metric">{{ overview.observationCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card>
-          <template #header>活跃 Evidence</template>
+          <template #header>Evidence 总数</template>
           <div class="metric">{{ overview.evidenceCount }}</div>
         </el-card>
       </el-col>
       <el-col :span="6">
         <el-card>
-          <template #header>待执行推荐</template>
+          <template #header>Knowledge 条目</template>
+          <div class="metric">{{ overview.knowledgeCount }}</div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card>
+          <template #header>待处理推荐</template>
           <div class="metric">{{ overview.pendingRecommendations }}</div>
         </el-card>
       </el-col>
@@ -36,8 +36,8 @@
       </el-col>
       <el-col :span="12">
         <el-card>
-          <template #header>最近 24h Observation 趋势</template>
-          <div ref="trendChart" style="height: 300px"></div>
+          <template #header>资源类型分布</template>
+          <div ref="typeChart" style="height: 300px"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -45,65 +45,93 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import { resourceApi, observationApi } from '@/api'
+import {
+  resourceApi,
+  evidenceApi,
+  knowledgeApi,
+  recommendationApi,
+  type Resource,
+} from '@/api'
 
-const overview = reactive({
+const loading = ref(false)
+const overview = ref({
   resourceCount: 0,
-  observationCount: 0,
   evidenceCount: 0,
+  knowledgeCount: 0,
   pendingRecommendations: 0,
 })
 
-const statusChart = ref()
-const trendChart = ref()
+const statusChart = ref<HTMLElement>()
+const typeChart = ref<HTMLElement>()
+let statusInstance: echarts.ECharts | null = null
+let typeInstance: echarts.ECharts | null = null
 
-async function loadOverview() {
-  try {
-    const res = await resourceApi.list({ limit: 1 })
-    overview.resourceCount = res.data?.length || 0
-  } catch (e) {
-    console.error(e)
-  }
+function countByField(resources: Resource[], field: 'status' | 'resourceType') {
+  const map = new Map<string, number>()
+  resources.forEach(r => {
+    const key = (r[field] as string) || 'UNKNOWN'
+    map.set(key, (map.get(key) || 0) + 1)
+  })
+  return Array.from(map.entries()).map(([name, value]) => ({ name, value }))
 }
 
-function renderStatusChart() {
-  const chart = echarts.init(statusChart.value)
+function renderPie(el: HTMLElement | undefined, data: Array<{ name: string; value: number }>) {
+  if (!el) return null
+  const chart = echarts.init(el)
   chart.setOption({
     tooltip: { trigger: 'item' },
     series: [{
       type: 'pie',
       radius: ['40%', '70%'],
-      data: [
-        { value: 10, name: 'RUNNING' },
-        { value: 2, name: 'STOPPED' },
-        { value: 1, name: 'MAINTENANCE' },
-      ],
+      data: data.length ? data : [{ name: '暂无数据', value: 1, itemStyle: { color: '#dcdfe6' } }],
     }],
   })
+  return chart
 }
 
-function renderTrendChart() {
-  const chart = echarts.init(trendChart.value)
-  const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`)
-  chart.setOption({
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: hours },
-    yAxis: { type: 'value' },
-    series: [{
-      type: 'line',
-      smooth: true,
-      data: hours.map(() => Math.floor(Math.random() * 1000)),
-      areaStyle: {},
-    }],
-  })
+async function loadOverview() {
+  loading.value = true
+  try {
+    const [resourcesRes, evidenceRes, knowledgeRes, pendingRes] = await Promise.all([
+      resourceApi.list(),
+      evidenceApi.list().catch(() => ({ data: [] })),
+      knowledgeApi.list().catch(() => ({ data: [] })),
+      recommendationApi.list({ status: 'PENDING' }).catch(() => ({ data: [] })),
+    ])
+
+    const resources: Resource[] = resourcesRes.data || []
+    overview.value.resourceCount = resources.length
+    overview.value.evidenceCount = (evidenceRes.data || []).length
+    overview.value.knowledgeCount = (knowledgeRes.data || []).length
+    overview.value.pendingRecommendations = (pendingRes.data || []).length
+
+    statusInstance?.dispose()
+    typeInstance?.dispose()
+    statusInstance = renderPie(statusChart.value, countByField(resources, 'status'))
+    typeInstance = renderPie(typeChart.value, countByField(resources, 'resourceType'))
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleResize() {
+  statusInstance?.resize()
+  typeInstance?.resize()
 }
 
 onMounted(() => {
   loadOverview()
-  renderStatusChart()
-  renderTrendChart()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  statusInstance?.dispose()
+  typeInstance?.dispose()
 })
 </script>
 

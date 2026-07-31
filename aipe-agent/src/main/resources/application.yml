@@ -23,18 +23,18 @@ agent:
         procPath: /proc
 
     - type: REDIS
-      enabled: false
+      enabled: true
       intervalMs: 30000
       properties:
-        host: localhost
-        port: 6379
-        password: ""
+        host: 124.223.220.245
+        port: "6379"
+        password: "pamirs@123"
 
     - type: MYSQL
       enabled: true
       intervalMs: 30000
       properties:
-        host: localhost
+        host: 124.223.220.245
         port: "3306"
         user: root
         password: astock_root

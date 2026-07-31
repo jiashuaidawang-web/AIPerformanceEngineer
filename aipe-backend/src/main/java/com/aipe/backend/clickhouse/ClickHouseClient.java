@@ -44,11 +44,18 @@ public class ClickHouseClient {
      * 写入单条 Observation
      */
     public void insertObservation(String resourceId, String metricName, double metricValue, long timestamp, String tags) {
+        insertObservation(resourceId, metricName, metricValue, timestamp, tags, "HOST");
+    }
+
+    /**
+     * 写入单条 Observation (带 resourceType)
+     */
+    public void insertObservation(String resourceId, String metricName, double metricValue, long timestamp, String tags, String resourceType) {
         String sql = String.format(
-                "INSERT INTO metric_observation (timestamp, resource_id, metric_name, metric_value, labels) VALUES " +
-                        "('%s', '%s', '%s', %s, '%s')",
+                "INSERT INTO observation_fact (timestamp, resource_id, resource_type, metric_name, metric_value, labels) VALUES " +
+                        "('%s', '%s', '%s', '%s', %s, '%s')",
                 new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(timestamp)),
-                escape(resourceId), escape(metricName), formatValue(metricValue), escape(tags)
+                escape(resourceId), escape(resourceType), escape(metricName), formatValue(metricValue), escape(tags)
         );
         execute(sql);
     }
@@ -60,13 +67,13 @@ public class ClickHouseClient {
         if (observations == null || observations.isEmpty()) return;
 
         StringBuilder sql = new StringBuilder(
-                "INSERT INTO metric_observation (timestamp, resource_id, metric_name, metric_value, labels) VALUES "
+                "INSERT INTO observation_fact (timestamp, resource_id, resource_type, metric_name, metric_value, labels) VALUES "
         );
 
         for (int i = 0; i < observations.size(); i++) {
             Map<String, Object> obs = observations.get(i);
             if (i > 0) sql.append(", ");
-            sql.append(String.format("('%s', '%s', '%s', %s, '%s')",
+            sql.append(String.format("('%s', '%s', 'HOST', '%s', %s, '%s')",
                     obs.get("timestamp").toString(),
                     escape(obs.get("resource_id").toString()),
                     escape(obs.get("metric_name").toString()),
@@ -86,7 +93,7 @@ public class ClickHouseClient {
         long safeEndTime = Math.min(endTime, 2147483647000L);
         String sql = String.format(
                 "SELECT timestamp, resource_id, metric_name, metric_value, labels " +
-                        "FROM metric_observation " +
+                        "FROM observation_fact " +
                         "WHERE resource_id = '%s' AND metric_name = '%s' " +
                         "AND timestamp >= toDateTime(%d) AND timestamp <= toDateTime(%d) " +
                         "ORDER BY timestamp DESC LIMIT %d",
@@ -119,7 +126,7 @@ public class ClickHouseClient {
         List<Map<String, Object>> results = new ArrayList<>();
         String sql = String.format(
                 "SELECT timestamp, resource_id, metric_name, metric_value, labels " +
-                        "FROM metric_observation " +
+                        "FROM observation_fact " +
                         "WHERE resource_id = '%s' " +
                         "ORDER BY timestamp DESC LIMIT %d",
                 escape(resourceId), limit
