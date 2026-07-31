@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { recommendationApi, knowledgeApi, resourceApi, type Recommendation, type Knowledge, type Resource } from '@/api'
 

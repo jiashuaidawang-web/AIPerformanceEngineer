@@ -203,6 +203,39 @@ async function handleCreate() {
   }
 }
 
+const statusDialogVisible = ref(false)
+const currentResource = ref<Resource | null>(null)
+const newStatus = ref('RUNNING')
+
+function openStatusDialog(row: Resource) {
+  currentResource.value = row
+  newStatus.value = row.status
+  statusDialogVisible.value = true
+}
+
+async function updateStatus() {
+  if (!currentResource.value) return
+  try {
+    await resourceApi.updateStatus(currentResource.value.resourceId, newStatus.value)
+    ElMessage.success('状态更新成功')
+    statusDialogVisible.value = false
+    loadData()
+  } catch (e) {
+    ElMessage.error('状态更新失败')
+  }
+}
+
+async function handleDelete(row: Resource) {
+  await ElMessageBox.confirm(`确定删除资源 "${row.resourceName}"？`, '提示', { type: 'warning' })
+  try {
+    await resourceApi.delete(row.resourceId)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (e) {
+    ElMessage.error('删除失败')
+  }
+}
+
 onMounted(loadData)
 </script>
 

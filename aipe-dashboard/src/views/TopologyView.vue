@@ -59,6 +59,7 @@ const hasData = ref(false)
 const nodeCount = ref(0)
 const edgeCount = ref(0)
 const dialogVisible = ref(false)
+const resources = ref<Resource[]>([])
 const form = reactive({
   sourceResourceId: '',
   targetResourceId: '',
@@ -125,7 +126,7 @@ async function loadTopology() {
       resourceApi.list(),
     ])
     const relationships: Relationship[] = relRes.data || []
-    const resources: Resource[] = resRes.data || []
+    resources.value = resRes.data || []
 
     if (!relationships.length) {
       hasData.value = false
@@ -133,7 +134,7 @@ async function loadTopology() {
     }
 
     hasData.value = true
-    const { nodes, links } = buildGraph(relationships, resources)
+    const { nodes, links } = buildGraph(relationships, resources.value)
     nodeCount.value = nodes.length
     edgeCount.value = links.length
 
@@ -175,6 +176,34 @@ async function loadTopology() {
 
 function handleResize() {
   chart?.resize()
+}
+
+function openCreateDialog() {
+  form.sourceResourceId = ''
+  form.targetResourceId = ''
+  form.relationshipType = 'CALLS'
+  form.confidence = 90
+  dialogVisible.value = true
+}
+
+async function createRelationship() {
+  if (!form.sourceResourceId || !form.targetResourceId) {
+    ElMessage.warning('请选择源资源和目标资源')
+    return
+  }
+  try {
+    await relationshipApi.create({
+      sourceResourceId: form.sourceResourceId,
+      targetResourceId: form.targetResourceId,
+      relationshipType: form.relationshipType,
+      confidence: form.confidence,
+    })
+    ElMessage.success('创建成功')
+    dialogVisible.value = false
+    loadTopology()
+  } catch (e) {
+    ElMessage.error('创建失败')
+  }
 }
 
 function openCreateDialog() {
