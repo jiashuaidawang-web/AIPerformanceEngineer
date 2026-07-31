@@ -101,6 +101,26 @@
         <el-button type="primary" :loading="creating" @click="handleCreate">创建</el-button>
       </template>
     </el-dialog>
+
+    <!-- 状态变更对话框 -->
+    <el-dialog v-model="statusDialogVisible" title="变更资源状态" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="当前状态">
+          <el-tag :type="statusTag(currentResource?.status)">{{ currentResource?.status }}</el-tag>
+        </el-form-item>
+        <el-form-item label="新状态">
+          <el-select v-model="newStatus" style="width: 100%">
+            <el-option label="RUNNING" value="RUNNING" />
+            <el-option label="STOPPED" value="STOPPED" />
+            <el-option label="MAINTENANCE" value="MAINTENANCE" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="statusDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="updateStatus">确认</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
