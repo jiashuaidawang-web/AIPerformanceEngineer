@@ -8,6 +8,7 @@ import com.aipe.agent.health.AgentHealthChecker;
 import com.aipe.agent.heartbeat.HeartbeatSender;
 import com.aipe.agent.lifecycle.AgentLifecycleManager;
 import com.aipe.agent.observation.HttpObservationSender;
+import com.aipe.agent.resource.ResourceRegistrar;
 import com.aipe.agent.scheduler.SchedulerManager;
 import com.aipe.common.enums.AgentState;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ public class AgentRuntime {
     private final AgentHealthChecker healthChecker;
     private final AgentLifecycleManager lifecycleManager;
     private final HeartbeatSender heartbeatSender;
+    private final ResourceRegistrar resourceRegistrar;
     private final AtomicReference<AgentState> state = new AtomicReference<>(AgentState.CREATED);
     private LocalDateTime startedTime;
 
@@ -45,6 +47,7 @@ public class AgentRuntime {
         this.healthChecker = new AgentHealthChecker(this);
         this.lifecycleManager = new AgentLifecycleManager(this);
         this.heartbeatSender = new HeartbeatSender(config);
+        this.resourceRegistrar = new ResourceRegistrar(config);
         log.info("AgentRuntime instantiated for agentId={}", config.getAgentId());
     }
 
@@ -73,6 +76,9 @@ public class AgentRuntime {
             connectorManager.init();
             connectorManager.startAll();
 
+            // 4.5 自动注册资源到 Resource Engine
+            registerResources();
+
             // 5. 启动健康检查
             healthChecker.start();
 
@@ -86,6 +92,26 @@ public class AgentRuntime {
             log.error("Failed to start Agent Runtime", e);
             state.set(AgentState.ERROR);
             throw new RuntimeException("Agent start failed", e);
+        }
+    }
+
+    /**
+     * 自动注册资源
+     */
+    private void registerResources() {
+        try {
+            log.info("Auto-discovering and registering resources...");
+            // 注册 Agent 发现的资源
+            String[][] resources = {
+                {"jvm-local", "JVM", "JVM进程"},
+                {"linux-local", "LINUX", "Linux服务器"},
+                {"mysql-node", "MYSQL", "MySQL数据库"},
+                {"redis-node", "REDIS", "Redis缓存"},
+            };
+            resourceRegistrar.registerResources(resources);
+            log.info("Resource auto-registration completed.");
+        } catch (Exception e) {
+            log.warn("Resource auto-registration failed: {}", e.getMessage());
         }
     }
 
