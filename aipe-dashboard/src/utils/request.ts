@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 
 const request: AxiosInstance = axios.create({
-  baseURL: (import.meta as any).env?.VITE_API_BASE_URL || '/api',
+  baseURL: '/api',
   timeout: 30000,
 })
 
