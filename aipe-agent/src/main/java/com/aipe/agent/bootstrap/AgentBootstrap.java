@@ -97,6 +97,20 @@ public class AgentBootstrap {
     public static void main(String[] args) {
         AgentBootstrap bootstrap = new AgentBootstrap();
         bootstrap.boot();
+
+        // 保持主线程存活，防止 JVM 退出
+        while (true) {
+            try {
+                Thread.sleep(60000); // 每分钟检查一次
+                if (bootstrap.getStatus() == AgentState.ERROR) {
+                    log.warn("Agent in ERROR state, exiting for restart");
+                    System.exit(1);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
     }
 
     /**
