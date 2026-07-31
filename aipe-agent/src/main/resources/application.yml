@@ -6,7 +6,7 @@ agent:
   agentId: agent-001
   serverId: server-001
   environment: dev
-  backendUrl: http://108.160.128.34:8081
+  backendUrl: http://108.160.128.34
   schedulerPoolSize: 4
   sendTimeoutMs: 5000
   connectors:
