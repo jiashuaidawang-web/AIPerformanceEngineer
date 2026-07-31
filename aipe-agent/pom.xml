@@ -45,6 +45,26 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>connector-kafka</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>connector-rocketmq</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>connector-zookeeper</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ai.performance</groupId>
+            <artifactId>connector-elasticsearch</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
